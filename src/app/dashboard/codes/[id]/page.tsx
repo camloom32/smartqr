@@ -48,6 +48,11 @@ export default function CodeDetailPage() {
 
       setCode(codeData)
 
+      const style = codeData.style_json || {}
+      const fg = encodeURIComponent(style.foregroundColor || '#000000')
+      const bg = encodeURIComponent(style.backgroundColor || '#ffffff')
+      const logoParam = style.logo ? `&logo=${encodeURIComponent(style.logo)}` : ''
+
       const [summaryResult, scansResult] = await Promise.all([
         supabase.rpc('get_scan_summary', { code_id_param: codeId }),
         supabase.from('scan_events').select('*').eq('code_id', codeId).order('created_at', { ascending: false }).limit(20),
@@ -62,7 +67,7 @@ export default function CodeDetailPage() {
       setRecentScans(scansResult.data || [])
       setLoading(false)
 
-      const qrRes = await fetch(`/api/qr/preview?url=${encodeURIComponent(`https://smartqr.id/c/${codeData.short_code}`)}&fg=%23000000&bg=%23ffffff`)
+      const qrRes = await fetch(`/api/qr/preview?url=${encodeURIComponent(`https://smartqr.id/c/${codeData.short_code}`)}&fg=${fg}&bg=${bg}${logoParam}`)
       const qrData = await qrRes.json()
       setQrImage(qrData.png || '')
     }

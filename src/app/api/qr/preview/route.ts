@@ -65,13 +65,14 @@ export async function GET(req: NextRequest) {
   const url = searchParams.get('url')
   const fg = searchParams.get('fg') || '#000000'
   const bg = searchParams.get('bg') || '#ffffff'
+  const logo = searchParams.get('logo') || undefined
 
   if (!url) {
     return NextResponse.json({ error: 'URL required' }, { status: 400 })
   }
 
   try {
-    const result = await generateQR(url, fg, bg)
+    const result = await generateQR(url, fg, bg, logo)
     return NextResponse.json(result)
   } catch {
     return NextResponse.json({ error: 'Failed to generate QR' }, { status: 500 })

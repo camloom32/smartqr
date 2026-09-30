@@ -104,13 +104,17 @@ export default function NewCodePage() {
     setLoading(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
+      let logoBase64 = undefined
+      if (logo) {
+        logoBase64 = await getBase64FromFile(logo)
+      }
       const res = await fetch('/api/codes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify({ title, destinationUrl, style: { foregroundColor: fgColor, backgroundColor: bgColor } }),
+        body: JSON.stringify({ title, destinationUrl, style: { foregroundColor: fgColor, backgroundColor: bgColor, logo: logoBase64 } }),
       })
       if (!res.ok) {
         const data = await res.json()
