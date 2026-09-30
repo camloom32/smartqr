@@ -7,6 +7,7 @@ import Image from 'next/image'
 
 export default function AuthCallback() {
   const [status, setStatus] = useState('Processing...')
+  const [error, setError] = useState('')
 
   useEffect(() => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -15,14 +16,19 @@ export default function AuthCallback() {
     const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
     const handleCallback = async () => {
-      const hash = window.location.hash
+      // Read hash directly from href
+      const fullUrl = window.location.href
+      const hashIndex = fullUrl.indexOf('#')
 
-      if (hash && hash.includes('access_token')) {
-        setStatus('Session found! Redirecting...')
-        setTimeout(() => {
-          window.location.href = '/dashboard'
-        }, 1000)
-        return
+      if (hashIndex !== -1) {
+        const hash = fullUrl.substring(hashIndex)
+        if (hash.includes('access_token')) {
+          setStatus('Found token in URL! Redirecting...')
+          setTimeout(() => {
+            window.location.href = '/dashboard'
+          }, 1000)
+          return
+        }
       }
 
       const params = new URLSearchParams(window.location.search)
@@ -30,20 +36,18 @@ export default function AuthCallback() {
 
       if (code) {
         const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code)
-
         if (error || !user) {
-          setStatus('Error: ' + (error?.message || 'auth_failed'))
+          setError(error?.message || 'auth_failed')
           return
         }
-
-        setStatus('Session created! Redirecting...')
+        setStatus('Code exchanged! Redirecting...')
         setTimeout(() => {
           window.location.href = '/dashboard'
         }, 1000)
         return
       }
 
-      setStatus('No auth data found')
+      setError('no_auth_data')
     }
 
     handleCallback()
@@ -55,7 +59,14 @@ export default function AuthCallback() {
         <Link href="/" className="block mb-6">
           <Image src="/logo.png" alt="SmartQR" width={140} height={40} className="h-10 w-auto mx-auto" />
         </Link>
-        <p className="text-lg text-gray-600">{status}</p>
+        {error ? (
+          <div className="text-center">
+            <p className="text-red-600 mb-4">Error: {error}</p>
+            <Link href="/login" className="text-blue-600 hover:underline">Back to login</Link>
+          </div>
+        ) : (
+          <p className="text-lg text-gray-600">{status}</p>
+        )}
       </div>
     </div>
   )
