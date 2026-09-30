@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 
@@ -33,7 +34,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="px-6 py-4">
-        <Link href="/" className="text-2xl font-bold text-blue-600">SmartQR</Link>
+        <Link href="/">
+          <Image src="/logo.png" alt="SmartQR" width={140} height={40} className="h-10 w-auto" />
+        </Link>
       </header>
 
       <div className="flex-1 flex items-center justify-center px-6">

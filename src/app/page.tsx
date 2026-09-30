@@ -7,9 +7,8 @@ export default function HomePage() {
       {/* Header */}
       <header className="border-b">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <Image src="/logo.jpg" alt="SmartQR" width={40} height={40} className="rounded" />
-            <span className="text-2xl font-bold text-blue-600">SmartQR</span>
+          <Link href="/">
+            <Image src="/logo.png" alt="SmartQR" width={140} height={40} className="h-10 w-auto" />
           </Link>
           <nav className="flex items-center gap-6">
             <Link href="/pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900">

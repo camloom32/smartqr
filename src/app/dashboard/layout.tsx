@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export default async function DashboardLayout({
@@ -18,7 +19,9 @@ export default async function DashboardLayout({
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-blue-600">SmartQR</Link>
+          <Link href="/">
+            <Image src="/logo.png" alt="SmartQR" width={140} height={40} className="h-10 w-auto" />
+          </Link>
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="text-sm font-medium text-gray-600 hover:text-gray-900">
               My Codes
