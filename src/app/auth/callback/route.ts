@@ -35,5 +35,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/login?error=auth_failed', request.url))
   }
 
+  await supabase.from('profiles').upsert({
+    id: user.id,
+    email: user.email,
+    full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+  })
+
   return response
 }
