@@ -63,7 +63,8 @@ export default function AuthCallback() {
           return
         }
 
-        await fetch('/api/auth/session', {
+        setStatus('Saving session...')
+        const sessionRes = await fetch('/api/auth/session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -71,6 +72,8 @@ export default function AuthCallback() {
             refresh_token: data.session.refresh_token,
           }),
         })
+
+        console.log('Session save response:', sessionRes.status, await sessionRes.json())
 
         window.location.href = '/dashboard'
         return
