@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code')
-  const next = request.nextUrl.searchParams.get('next') || '/auth/complete'
+  const next = request.nextUrl.searchParams.get('next') || '/dashboard'
 
   if (!code) {
     return NextResponse.redirect(new URL('/login?error=no_code', request.url))
