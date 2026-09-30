@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { supabase } from '@/lib/supabase/client'
 import type { Database } from '@/lib/supabase/database.types'
 
 type Subscription = Database['public']['Tables']['subscriptions']['Row']
@@ -24,13 +24,13 @@ export default function NewCodePage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const supabase = await createServerSupabaseClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const supabaseClient = supabase
+      const { data: { user } } = await supabaseClient.auth.getUser()
       if (!user) return
 
       const [codesResult, subResult] = await Promise.all([
-        supabase.from('dynamic_codes').select('id', { count: 'exact' }).eq('user_id', user.id).eq('is_active', true),
-        supabase.from('subscriptions').select('tier, status').eq('user_id', user.id).eq('status', 'active').single(),
+        supabaseClient.from('dynamic_codes').select('id', { count: 'exact' }).eq('user_id', user.id).eq('is_active', true),
+        supabaseClient.from('subscriptions').select('tier, status').eq('user_id', user.id).eq('status', 'active').single(),
       ])
 
       const sub = subResult.data as Subscription | null
