@@ -38,14 +38,30 @@ export default function Header() {
             {menuOpen && (
               <div className="absolute left-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-50">
                 <Link
+                  href="/create"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition"
+                >
+                  <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-4 h-4 text-orange-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <path d="M7 7h.01M7 12h.01M7 17h.01M12 7h.01M12 12h.01M12 17h.01M17 7h.01M17 12h.01M17 17h.01" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">QR Code Creator</p>
+                    <p className="text-xs text-gray-500">Create static QR codes for any URL</p>
+                  </div>
+                </Link>
+                <div className="border-t border-gray-100 my-1" />
+                <Link
                   href="/scan"
                   onClick={() => setMenuOpen(false)}
                   className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition"
                 >
                   <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
                     <svg className="w-4 h-4 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <path d="M7 7h.01M7 12h.01M7 17h.01M12 7h.01M12 12h.01M12 17h.01M17 7h.01M17 12h.01M17 17h.01" />
+                      <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" />
                     </svg>
                   </div>
                   <div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import Header from '@/components/Header'
+import ToolLinks from '@/components/ToolLinks'
 
 export default function CreateQRPage() {
   const [url, setUrl] = useState('')
@@ -228,13 +229,8 @@ export default function CreateQRPage() {
           </div>
         </div>
 
-        <div className="text-center mt-12 text-sm text-gray-500">
-          <p>Static QR codes are free forever. Create an account to unlock dynamic codes with real-time analytics.</p>
-          <Link href="/signup" className="text-blue-600 hover:underline mt-1 inline-block">
-            Sign up for free
-          </Link>
-        </div>
       </main>
+      <ToolLinks />
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import Header from '@/components/Header'
+import ToolLinks from '@/components/ToolLinks'
 
 export default function HomePage() {
   return (
@@ -94,6 +95,8 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      <ToolLinks />
 
       {/* Footer */}
       <footer className="border-t py-8 px-6">

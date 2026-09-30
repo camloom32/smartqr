@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Html5Qrcode } from 'html5-qrcode'
 import Header from '@/components/Header'
+import ToolLinks from '@/components/ToolLinks'
 
 export default function ScanPage() {
   const [scannedResult, setScannedResult] = useState('')
@@ -214,13 +215,8 @@ export default function ScanPage() {
           </div>
         )}
 
-        <div className="mt-10 text-center">
-          <p className="text-gray-500 mb-3">Want to create your own QR codes?</p>
-          <Link href="/create" className="text-blue-600 hover:underline font-medium">
-            Create a free QR code
-          </Link>
-        </div>
       </main>
+      <ToolLinks />
     </div>
   )
 }

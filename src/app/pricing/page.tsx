@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Header from '@/components/Header'
+import ToolLinks from '@/components/ToolLinks'
 
 const TIERS = [
   {
@@ -130,6 +131,7 @@ export default function PricingPage() {
           </p>
         </div>
       </section>
+      <ToolLinks showUpgrade={false} />
     </div>
   )
 }

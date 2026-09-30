@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import Header from '@/components/Header'
+import ToolLinks from '@/components/ToolLinks'
 
 function rgbToHex(r: number, g: number, b: number): string {
   return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')
@@ -347,16 +348,11 @@ export default function AnalyzePage() {
                 </li>
               </ul>
             </div>
-
-            <div className="text-center">
-              <p className="text-gray-500 mb-3">Create a high-scoring QR code with SmartQR</p>
-              <Link href="/create" className="inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition">
-                Create QR Code Free
-              </Link>
-            </div>
           </div>
         )}
+
       </main>
+      <ToolLinks />
     </div>
   )
 }

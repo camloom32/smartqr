@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { jsPDF } from 'jspdf'
 import Header from '@/components/Header'
+import ToolLinks from '@/components/ToolLinks'
 
 type Template = 'modern' | 'minimal' | 'bold' | 'classic'
 
@@ -309,13 +310,8 @@ export default function WifiPage() {
           </div>
         </div>
 
-        <div className="mt-16 text-center">
-          <p className="text-gray-500 mb-3">Create your own custom QR codes with SmartQR</p>
-          <Link href="/create" className="inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition">
-            Create QR Code Free
-          </Link>
-        </div>
       </main>
+      <ToolLinks />
     </div>
   )
 }
