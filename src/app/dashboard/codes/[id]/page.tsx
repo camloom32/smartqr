@@ -56,7 +56,7 @@ export default function CodeDetailPage() {
       ])
 
       if (summaryResult.data) {
-        setStats(summaryResult.data)
+        setStats(summaryResult.data[0])
       } else {
         setStats({ total_scans: 0, unique_visitors: 0, today_scans: 0, this_week: 0, this_month: 0 })
       }
