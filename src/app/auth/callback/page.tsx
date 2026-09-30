@@ -1,58 +1,49 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import Image from 'next/image'
 
 export default function AuthCallback() {
   const [status, setStatus] = useState('Processing...')
-  const [error, setError] = useState('')
 
   useEffect(() => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
     const handleCallback = async () => {
       const hash = window.location.hash
 
       if (hash && hash.includes('access_token')) {
-        setStatus('Session established!')
-
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-
-        if (sessionError || !session) {
-          setError('Failed to get session')
-          return
-        }
-
+        setStatus('Session found! Redirecting...')
         setTimeout(() => {
           window.location.href = '/dashboard'
-        }, 500)
+        }, 1000)
         return
       }
 
       const params = new URLSearchParams(window.location.search)
       const code = params.get('code')
-      const errorParam = params.get('error')
-
-      if (errorParam) {
-        setError(errorParam)
-        return
-      }
 
       if (code) {
-        const { data: { user }, error: authError } = await supabase.auth.exchangeCodeForSession(code)
+        const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code)
 
-        if (authError || !user) {
-          setError('auth_failed')
+        if (error || !user) {
+          setStatus('Error: ' + (error?.message || 'auth_failed'))
           return
         }
 
+        setStatus('Session created! Redirecting...')
         setTimeout(() => {
           window.location.href = '/dashboard'
-        }, 500)
+        }, 1000)
         return
       }
 
-      setError('no_session')
+      setStatus('No auth data found')
     }
 
     handleCallback()
@@ -64,14 +55,7 @@ export default function AuthCallback() {
         <Link href="/" className="block mb-6">
           <Image src="/logo.png" alt="SmartQR" width={140} height={40} className="h-10 w-auto mx-auto" />
         </Link>
-        {error ? (
-          <div className="text-center">
-            <p className="text-red-600 mb-4">Auth failed: {error}</p>
-            <Link href="/login" className="text-blue-600 hover:underline">Back to login</Link>
-          </div>
-        ) : (
-          <p className="text-lg text-gray-600">{status}</p>
-        )}
+        <p className="text-lg text-gray-600">{status}</p>
       </div>
     </div>
   )
