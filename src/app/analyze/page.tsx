@@ -37,7 +37,7 @@ function getContrastRatio(hex1: string, hex2: string): number {
   return (lighter + 0.05) / (darker + 0.05)
 }
 
-function getScore(contrast: number): { score: number; label: string; color: string; bgColor: string; description: string } {
+function getScore(contrast: number): { score: number; label: string; color: string; bgColor: string; borderColor: string; description: string } {
   if (contrast >= 10) return {
     score: 100,
     label: 'Excellent',
@@ -106,7 +106,7 @@ export default function AnalyzePage() {
     try {
       const reader = new FileReader()
       reader.onload = (e) => {
-        const img = new Image()
+        const img = document.createElement('img')
         img.onload = () => {
           const canvas = canvasRef.current
           if (!canvas) return
@@ -162,7 +162,12 @@ export default function AnalyzePage() {
             foreground: darkColor,
             background: lightColor,
             contrast,
-            ...scoreInfo,
+            score: scoreInfo.score,
+            label: scoreInfo.label,
+            color: scoreInfo.color,
+            bgColor: scoreInfo.bgColor,
+            borderColor: scoreInfo.borderColor,
+            description: scoreInfo.description,
           })
           setImageUrl(e.target?.result as string)
         }
