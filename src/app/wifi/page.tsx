@@ -26,7 +26,7 @@ export default function WifiPage() {
         const res = await fetch('/api/wifi-qr', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ssid, password, encryption, hidden }),
+          body: JSON.stringify({ ssid, password, encryption, hidden, template }),
         })
         const data = await res.json()
         if (data.png) {
@@ -37,7 +37,7 @@ export default function WifiPage() {
       }
     }, 300)
     return () => clearTimeout(timer)
-  }, [ssid, password, encryption, hidden])
+  }, [ssid, password, encryption, hidden, template])
 
   const copyCredentials = () => {
     navigator.clipboard.writeText(`Network: ${ssid}\nPassword: ${password}`)
@@ -232,13 +232,43 @@ export default function WifiPage() {
           <div className="space-y-6">
             <div className="bg-gray-50 rounded-2xl p-6">
               <h2 className="text-lg font-semibold mb-4">Preview</h2>
-              <div className="bg-white rounded-xl border border-gray-200 p-6 min-h-[320px] flex flex-col items-center justify-center">
+              <div className="bg-white rounded-xl border border-gray-200 p-4 min-h-[380px] flex items-center justify-center overflow-hidden">
                 {qrDataUrl ? (
-                  <div className="text-center">
-                    <img src={qrDataUrl} alt="WiFi QR Code" className="w-48 h-48 mx-auto" />
-                    <p className="font-semibold text-gray-900 mt-3">{ssid}</p>
-                    <p className="text-sm text-gray-500">{password || '(no password)'}</p>
-                    <p className="text-xs text-gray-400 mt-1 capitalize">{encryption}{hidden ? ' (hidden)' : ''}</p>
+                  <div className={`w-full max-w-xs ${template === 'bold' ? 'bg-blue-600 text-white p-4 rounded-lg' : template === 'classic' ? 'border-4 border-black p-4' : 'bg-gray-50 p-4'}`}>
+                    {template === 'modern' && (
+                      <div className="flex gap-3 mb-3">
+                        <img src={qrDataUrl} alt="QR" className="w-24 h-24" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500">Network</p>
+                          <p className="font-bold text-gray-900">{ssid}</p>
+                          <p className="text-xs text-gray-500 mt-2">Password</p>
+                          <p className="font-semibold text-gray-700 text-sm">{password || '(none)'}</p>
+                        </div>
+                      </div>
+                    )}
+                    {template === 'minimal' && (
+                      <div className="text-center">
+                        <img src={qrDataUrl} alt="QR" className="w-28 h-28 mx-auto mb-2" />
+                        <p className="font-bold text-gray-900 text-sm">{ssid}</p>
+                        <p className="text-xs text-gray-500">{password || '(none)'}</p>
+                      </div>
+                    )}
+                    {template === 'bold' && (
+                      <div className="text-center">
+                        <p className="text-white font-bold text-sm mb-2">GUEST WiFi</p>
+                        <img src={qrDataUrl} alt="QR" className="w-20 h-20 mx-auto mb-2" />
+                        <p className="font-bold text-white text-xs">{ssid}</p>
+                        <p className="text-white/80 text-xs">{password || '(none)'}</p>
+                      </div>
+                    )}
+                    {template === 'classic' && (
+                      <div className="text-center">
+                        <img src={qrDataUrl} alt="QR" className="w-24 h-24 mx-auto mb-2" />
+                        <p className="font-bold text-gray-900 text-sm">WiFi Network</p>
+                        <p className="text-xs text-gray-600">{ssid}</p>
+                        <p className="text-xs text-gray-500">{password || '(none)'}</p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="text-gray-400">Enter network details to preview</p>

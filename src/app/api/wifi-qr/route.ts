@@ -11,7 +11,7 @@ const WIFI_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { ssid, password, encryption, hidden } = body
+  const { ssid, password, encryption, hidden, logo = true } = body
 
   if (!ssid) {
     return NextResponse.json({ error: 'SSID required' }, { status: 400 })
@@ -20,28 +20,38 @@ export async function POST(req: NextRequest) {
   try {
     const wifiString = `WIFI:T:${encryption || 'WPA'};S:${ssid};P:${password || ''};H:${hidden ? 'true' : 'false'};;`
 
+    const size = 400
     const pngBuffer = await QRCode.toBuffer(wifiString, {
       type: 'png',
-      width: 400,
-      margin: 2,
+      width: size,
+      margin: 4,
       color: { dark: '#000000', light: '#ffffff' },
       errorCorrectionLevel: 'H',
     })
 
     let finalBuffer = pngBuffer
 
-    try {
-      const iconBuffer = Buffer.from(WIFI_ICON_SVG)
-      const iconResized = await sharp(iconBuffer).resize(60, 60, { fit: 'contain' }).png().toBuffer()
+    if (logo) {
+      try {
+        const iconBuffer = Buffer.from(WIFI_ICON_SVG)
+        const iconResized = await sharp(iconBuffer).resize(60, 60, { fit: 'contain' }).png().toBuffer()
 
-      finalBuffer = await sharp({
-        create: { width: 400, height: 400, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } }
-      }).composite([
-        { input: pngBuffer, blend: 'over' },
-        { input: iconResized, blend: 'over', top: 170, left: 170 }
-      ]).png().toBuffer()
-    } catch {
-      // logo overlay failed, return QR without logo
+        const paddedIconSize = 110
+        const paddedIcon = await sharp({
+          create: { width: paddedIconSize, height: paddedIconSize, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } }
+        }).composite([
+          { input: iconResized, blend: 'over', top: Math.floor((paddedIconSize - 60) / 2), left: Math.floor((paddedIconSize - 60) / 2) }
+        ]).png().toBuffer()
+
+        finalBuffer = await sharp({
+          create: { width: size, height: size, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } }
+        }).composite([
+          { input: pngBuffer, blend: 'over' },
+          { input: paddedIcon, blend: 'over', top: Math.floor((size - paddedIconSize) / 2), left: Math.floor((size - paddedIconSize) / 2) }
+        ]).png().toBuffer()
+      } catch {
+        // logo overlay failed, return QR without logo
+      }
     }
 
     return NextResponse.json({
