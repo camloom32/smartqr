@@ -8,7 +8,13 @@ function generateCodeId(): string {
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabaseClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+  if (sessionError || !session) {
+    return NextResponse.json({ error: 'Unauthorized', debug: sessionError?.message }, { status: 401 })
+  }
+
+  const user = session.user
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
