@@ -75,33 +75,25 @@ export async function GET(
     .select('status, tier')
     .eq('user_id', qrCode.user_id)
     .eq('status', 'active')
-    .single()
+    .maybeSingle()
 
-  const isSubscribed = subscription?.status === 'active'
-
-  if (!isSubscribed) {
+  if (!subscription) {
     return NextResponse.redirect(new URL(`/expired?code=${code}`, req.url))
   }
 
   const deviceCategory = parseDeviceCategory(userAgent)
   const { country, region, city } = await geoLookup(clientIp)
 
-  ;(async () => {
-    try {
-      await supabase.from('scan_events').insert({
-        code_id: qrCode.id,
-        client_ip: clientIp,
-        user_agent: userAgent,
-        device_category: deviceCategory,
-        country,
-        region,
-        city,
-        referrer: req.headers.get('referer') || null,
-      })
-    } catch {
-      // ignore scan logging errors
-    }
-  })()
+  await supabase.from('scan_events').insert({
+    code_id: qrCode.id,
+    client_ip: clientIp,
+    user_agent: userAgent,
+    device_category: deviceCategory,
+    country,
+    region,
+    city,
+    referrer: req.headers.get('referer') || null,
+  })
 
   return NextResponse.redirect(qrCode.destination_url, 302)
 }
