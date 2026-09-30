@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
 import { generateShortCode } from '@/lib/qrcode'
 
 function generateCodeId(): string {
@@ -7,17 +8,26 @@ function generateCodeId(): string {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createServerSupabaseClient()
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+  const cookieStore = await cookies()
+  const accessToken = cookieStore.get('sb-access-token')?.value
 
-  if (sessionError || !session) {
-    return NextResponse.json({ error: 'Unauthorized', debug: sessionError?.message }, { status: 401 })
+  if (!accessToken) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const user = session.user
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      global: { headers: { Authorization: `Bearer ${accessToken}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    }
+  )
 
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized', debug: userError?.message }, { status: 401 })
   }
 
   const body = await req.json()

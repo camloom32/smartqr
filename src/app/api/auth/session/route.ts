@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 
 export async function POST(req: NextRequest) {
   const { access_token, refresh_token } = await req.json()
@@ -8,15 +8,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing token' }, { status: 400 })
   }
 
-  const supabase = await createServerSupabaseClient()
-
-  const { error } = await supabase.auth.setSession({
-    access_token,
-    refresh_token: refresh_token || '',
+  const cookieStore = await cookies()
+  cookieStore.set('sb-access-token', access_token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7,
   })
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (refresh_token) {
+    cookieStore.set('sb-refresh-token', refresh_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30,
+    })
   }
 
   return NextResponse.json({ success: true })
