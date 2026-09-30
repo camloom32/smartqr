@@ -1,56 +1,65 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 
 export default function AuthCallback() {
   const [status, setStatus] = useState('Processing...')
   const [error, setError] = useState('')
+  const router = useRouter()
 
   useEffect(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    const handleHashSession = async () => {
+      const hash = window.location.hash
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+      if (hash && hash.includes('access_token')) {
+        setStatus('Found token, logging in...')
 
-    const handleCallback = async () => {
-      // Read hash directly from href
-      const fullUrl = window.location.href
-      const hashIndex = fullUrl.indexOf('#')
+        const hashParams = new URLSearchParams(hash.substring(1))
+        const accessToken = hashParams.get('access_token')
+        const refreshToken = hashParams.get('refresh_token')
 
-      if (hashIndex !== -1) {
-        const hash = fullUrl.substring(hashIndex)
-        if (hash.includes('access_token')) {
-          setStatus('Found token in URL! Redirecting...')
-          setTimeout(() => {
-            window.location.href = '/dashboard'
-          }, 1000)
+        if (!accessToken) {
+          setError('Access token missing from URL')
           return
         }
+
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || '',
+        })
+
+        if (sessionError) {
+          setError(sessionError.message)
+          return
+        }
+
+        window.location.href = '/dashboard'
+        return
       }
 
       const params = new URLSearchParams(window.location.search)
       const code = params.get('code')
 
       if (code) {
-        const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code)
-        if (error || !user) {
-          setError(error?.message || 'auth_failed')
+        const { data: { user }, error: authError } = await supabase.auth.exchangeCodeForSession(code)
+
+        if (authError || !user) {
+          setError(authError?.message || 'auth_failed')
           return
         }
-        setStatus('Code exchanged! Redirecting...')
-        setTimeout(() => {
-          window.location.href = '/dashboard'
-        }, 1000)
+
+        window.location.href = '/dashboard'
         return
       }
 
       setError('no_auth_data')
     }
 
-    handleCallback()
+    handleHashSession()
   }, [])
 
   return (
