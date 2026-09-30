@@ -47,7 +47,6 @@ function SignupForm() {
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        flowType: 'pkce',
       },
     })
     if (error) {
