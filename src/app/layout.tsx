@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: 'SmartQR — QR codes built for business',
   description: 'Create stunning, customizable QR codes with real-time analytics. Unlimited scans, no penalties.',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/favicon.png',
   },
 }
 
