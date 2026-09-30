@@ -2,20 +2,20 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 
 export default function AuthCallback() {
   const [status, setStatus] = useState('Processing...')
   const [error, setError] = useState('')
-  const router = useRouter()
 
   useEffect(() => {
     const handleHashSession = async () => {
       const hash = window.location.hash
+      console.log('Hash in URL:', hash)
 
       if (hash && hash.includes('access_token')) {
+        console.log('Found access token in hash')
         setStatus('Found token, logging in...')
 
         const hashParams = new URLSearchParams(hash.substring(1))
@@ -27,35 +27,43 @@ export default function AuthCallback() {
           return
         }
 
+        console.log('Calling setSession...')
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken || '',
         })
 
         if (sessionError) {
+          console.error('setSession error:', sessionError)
           setError(sessionError.message)
           return
         }
 
+        console.log('Session set! Redirecting to dashboard...')
         window.location.href = '/dashboard'
         return
       }
 
       const params = new URLSearchParams(window.location.search)
       const code = params.get('code')
+      console.log('Code in URL:', code)
 
       if (code) {
+        console.log('Exchanging code for session...')
         const { data: { user }, error: authError } = await supabase.auth.exchangeCodeForSession(code)
 
         if (authError || !user) {
+          console.error('Code exchange error:', authError)
           setError(authError?.message || 'auth_failed')
           return
         }
 
+        console.log('Code exchanged! Redirecting to dashboard...')
         window.location.href = '/dashboard'
         return
       }
 
+      console.log('No auth data found in URL')
       setError('no_auth_data')
     }
 
