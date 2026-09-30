@@ -10,16 +10,18 @@ function generateCodeId(): string {
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies()
   const accessToken = cookieStore.get('sb-access-token')?.value
+  const authHeader = req.headers.get('authorization')
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : accessToken
 
-  if (!accessToken) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!bearerToken) {
+    return NextResponse.json({ error: 'Unauthorized', debug: 'no token' }, { status: 401 })
   }
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      global: { headers: { Authorization: `Bearer ${accessToken}` } },
+      global: { headers: { Authorization: `Bearer ${bearerToken}` } },
       auth: { persistSession: false, autoRefreshToken: false },
     }
   )

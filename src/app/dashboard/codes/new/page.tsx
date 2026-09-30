@@ -103,9 +103,13 @@ export default function NewCodePage() {
 
     setLoading(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/codes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({ title, destinationUrl, style: { foregroundColor: fgColor, backgroundColor: bgColor } }),
       })
       if (!res.ok) {
