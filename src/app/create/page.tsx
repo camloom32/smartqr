@@ -89,38 +89,48 @@ export default function CreateQRPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Foreground</label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={fgColor}
-                      onChange={(e) => setFgColor(e.target.value)}
-                      className="w-12 h-12 rounded-xl border-2 border-gray-200 cursor-pointer"
-                    />
+                  <div className="flex items-center gap-2 w-full">
+                    <div 
+                      className="w-12 h-12 rounded-lg border-2 border-gray-200 overflow-hidden relative cursor-pointer shrink-0"
+                      style={{ backgroundColor: fgColor }}
+                    >
+                      <input
+                        type="color"
+                        value={fgColor}
+                        onChange={(e) => setFgColor(e.target.value)}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                    </div>
                     <input
                       type="text"
                       value={fgColor}
                       onChange={(e) => setFgColor(e.target.value)}
-                      className="flex-1 rounded-xl border border-gray-300 px-3 py-2 text-sm font-mono"
+                      className="w-full min-w-0 rounded-lg border border-gray-300 px-3 py-2.5 text-sm font-mono"
                     />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Background</label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={bgColor}
-                      onChange={(e) => setBgColor(e.target.value)}
-                      className="w-12 h-12 rounded-xl border-2 border-gray-200 cursor-pointer"
-                    />
+                  <div className="flex items-center gap-2 w-full">
+                    <div 
+                      className="w-12 h-12 rounded-lg border-2 border-gray-200 overflow-hidden relative cursor-pointer shrink-0"
+                      style={{ backgroundColor: bgColor }}
+                    >
+                      <input
+                        type="color"
+                        value={bgColor}
+                        onChange={(e) => setBgColor(e.target.value)}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                    </div>
                     <input
                       type="text"
                       value={bgColor}
                       onChange={(e) => setBgColor(e.target.value)}
-                      className="flex-1 rounded-xl border border-gray-300 px-3 py-2 text-sm font-mono"
+                      className="w-full min-w-0 rounded-lg border border-gray-300 px-3 py-2.5 text-sm font-mono"
                     />
                   </div>
                 </div>
