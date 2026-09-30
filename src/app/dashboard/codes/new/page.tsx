@@ -88,6 +88,33 @@ export default function NewCodePage() {
   const maxCodes = plan === 'starter' ? 3 : 15
   const canCreate = plan !== 'free' && codeCount < maxCodes
 
+  const getContrastRatio = (hex1: string, hex2: string): number => {
+    const parse = (hex: string) => {
+      const clean = hex.replace('#', '')
+      const r = parseInt(clean.substring(0, 2), 16) / 255
+      const g = parseInt(clean.substring(2, 4), 16) / 255
+      const b = parseInt(clean.substring(4, 6), 16) / 255
+      const toLinear = (c: number) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+      return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
+    }
+    const l1 = parse(hex1)
+    const l2 = parse(hex2)
+    const lighter = Math.max(l1, l2)
+    const darker = Math.min(l1, l2)
+    return (lighter + 0.05) / (darker + 0.05)
+  }
+
+  const getScanScore = (contrast: number): { score: number; label: string; color: string; bgColor: string } => {
+    if (contrast >= 10) return { score: 100, label: 'Excellent', color: 'text-green-600', bgColor: 'bg-green-50' }
+    if (contrast >= 7) return { score: 90, label: 'Great', color: 'text-green-600', bgColor: 'bg-green-50' }
+    if (contrast >= 5) return { score: 75, label: 'Good', color: 'text-yellow-600', bgColor: 'bg-yellow-50' }
+    if (contrast >= 3) return { score: 50, label: 'Fair', color: 'text-orange-600', bgColor: 'bg-orange-50' }
+    return { score: 25, label: 'Poor', color: 'text-red-600', bgColor: 'bg-red-50' }
+  }
+
+  const contrast = getContrastRatio(fgColor, bgColor)
+  const scanScore = getScanScore(contrast)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -202,6 +229,29 @@ export default function NewCodePage() {
                     value={bgColor}
                     onChange={(e) => setBgColor(e.target.value)}
                     className="w-full min-w-0 rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono text-gray-900"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className={`p-4 rounded-xl ${scanScore.bgColor}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Scanability Score</p>
+                  <p className={`text-2xl font-bold ${scanScore.color}`}>{scanScore.score}/100</p>
+                </div>
+                <div className="text-right">
+                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${scanScore.color} ${scanScore.bgColor}`}>
+                    {scanScore.label}
+                  </span>
+                  <p className="text-xs text-gray-500 mt-1">{contrast.toFixed(1)}:1 contrast</p>
+                </div>
+              </div>
+              <div className="mt-2">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full transition-all ${scanScore.score >= 75 ? 'bg-green-500' : scanScore.score >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                    style={{ width: `${scanScore.score}%` }}
                   />
                 </div>
               </div>
