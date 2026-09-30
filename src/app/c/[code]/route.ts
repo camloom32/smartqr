@@ -32,7 +32,10 @@ export async function GET(
 ) {
   const { code } = await params
 
+  console.log('Redirect handler called with code:', code)
+
   if (!code) {
+    console.log('No code provided, redirecting to /not-found')
     return NextResponse.redirect(new URL('/not-found', req.url))
   }
 
@@ -56,13 +59,17 @@ export async function GET(
     supabaseOptions
   )
 
+  console.log('Looking up code:', code)
   const { data: qrCode, error } = await supabase
     .from('dynamic_codes')
     .select('id, destination_url, is_active, user_id')
     .eq('short_code', code)
     .single()
 
+  console.log('QR Code lookup result:', qrCode, 'error:', error)
+
   if (error || !qrCode) {
+    console.log('Code not found or error, redirecting to /not-found')
     return NextResponse.redirect(new URL('/not-found', req.url))
   }
 
