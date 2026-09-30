@@ -12,7 +12,6 @@ const TIERS = [
     features: [
       'Unlimited static QR codes',
       'Basic customization (colors)',
-      'QR code watermark',
       'No analytics',
       'No dynamic editing',
     ],
