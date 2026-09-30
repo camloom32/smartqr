@@ -1,20 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import QRCode from 'qrcode'
-import sharp from 'sharp'
 import { jsPDF } from 'jspdf'
 
 type Template = 'modern' | 'minimal' | 'bold' | 'classic'
-
-const WIFI_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <circle cx="50" cy="80" r="8" fill="#1a1a1a"/>
-  <path d="M15 55 Q50 20 85 55" stroke="#1a1a1a" stroke-width="8" fill="none" stroke-linecap="round"/>
-  <path d="M25 65 Q50 38 75 65" stroke="#1a1a1a" stroke-width="8" fill="none" stroke-linecap="round"/>
-  <path d="M35 75 Q50 55 65 75" stroke="#1a1a1a" stroke-width="8" fill="none" stroke-linecap="round"/>
-</svg>`
 
 export default function WifiPage() {
   const [ssid, setSsid] = useState('')
@@ -22,43 +13,27 @@ export default function WifiPage() {
   const [encryption, setEncryption] = useState<'WPA' | 'WEP' | 'nopass'>('WPA')
   const [template, setTemplate] = useState<Template>('modern')
   const [qrDataUrl, setQrDataUrl] = useState('')
-  const [previewDataUrl, setPreviewDataUrl] = useState('')
   const [hidden, setHidden] = useState(false)
   const [copied, setCopied] = useState(false)
-
-  const wifiString = `WIFI:T:${encryption};S:${ssid};P:${password};H:${hidden ? 'true' : 'false'};;`
 
   useEffect(() => {
     if (!ssid) {
       setQrDataUrl('')
-      setPreviewDataUrl('')
       return
     }
     const timer = setTimeout(async () => {
       try {
-        const url = await QRCode.toDataURL(wifiString, {
-          width: 400,
-          margin: 2,
-          color: { dark: '#000000', light: '#ffffff' },
-          errorCorrectionLevel: 'H',
+        const res = await fetch('/api/wifi-qr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ssid, password, encryption, hidden }),
         })
-        setQrDataUrl(url)
-
-        const iconBuffer = Buffer.from(WIFI_ICON_SVG)
-        const iconResized = await sharp(iconBuffer).resize(60, 60, { fit: 'contain' }).png().toBuffer()
-        const qrBuffer = Buffer.from(url.replace(/^data:image\/\w+;base64,/, ''), 'base64')
-
-        const compositeBuffer = await sharp({
-          create: { width: 400, height: 400, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } }
-        }).composite([
-          { input: qrBuffer, blend: 'over' },
-          { input: iconResized, blend: 'over', top: 170, left: 170 }
-        ]).png().toBuffer()
-
-        setPreviewDataUrl(`data:image/png;base64,${compositeBuffer.toString('base64')}`)
+        const data = await res.json()
+        if (data.png) {
+          setQrDataUrl(data.png)
+        }
       } catch {
-        setQrDataUrl(url)
-        setPreviewDataUrl(url)
+        // ignore
       }
     }, 300)
     return () => clearTimeout(timer)
@@ -73,19 +48,6 @@ export default function WifiPage() {
   const downloadPdf = async () => {
     if (!ssid || !qrDataUrl) return
 
-    const qrBuffer = Buffer.from(qrDataUrl.replace(/^data:image\/\w+;base64,/, ''), 'base64')
-    const iconBuffer = Buffer.from(WIFI_ICON_SVG)
-    const iconResized = await sharp(iconBuffer).resize(50, 50, { fit: 'contain' }).png().toBuffer()
-
-    const qrWithLogo = await sharp({
-      create: { width: 400, height: 400, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } }
-    }).composite([
-      { input: qrBuffer, blend: 'over' },
-      { input: iconResized, blend: 'over', top: 175, left: 175 }
-    ]).png().toBuffer()
-
-    const qrWithLogoUrl = `data:image/png;base64,${qrWithLogo.toString('base64')}`
-
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
     const pageWidth = pdf.internal.pageSize.getWidth()
     const pageHeight = pdf.internal.pageSize.getHeight()
@@ -97,7 +59,7 @@ export default function WifiPage() {
     if (template === 'modern') {
       pdf.setFillColor(245, 247, 250)
       pdf.rect(margin, margin, pageWidth - margin * 2, 110, 'F')
-      pdf.addImage(qrWithLogoUrl, 'PNG', margin + 15, margin + 15, 80, 80)
+      pdf.addImage(qrDataUrl, 'PNG', margin + 15, margin + 15, 80, 80)
       pdf.setFontSize(32)
       pdf.setFont('helvetica', 'bold')
       pdf.text('WiFi', margin + 110, margin + 40)
@@ -112,7 +74,7 @@ export default function WifiPage() {
       pdf.text('Password', margin + 110, margin + 88)
       pdf.setFontSize(16)
       pdf.setFont('helvetica', 'bold')
-      pdf.text(password, margin + 110, margin + 102)
+      pdf.text(password || '(none)', margin + 110, margin + 102)
       pdf.setDrawColor(200, 200, 200)
       pdf.line(margin, margin + 120, pageWidth - margin, margin + 120)
       pdf.setFontSize(10)
@@ -120,15 +82,15 @@ export default function WifiPage() {
       pdf.text('Scan QR code or enter credentials to connect', margin, margin + 130)
       pdf.setTextColor(0, 0, 0)
       pdf.setFontSize(8)
-      pdf.text(`Network: ${ssid}  |  Password: ${password}`, margin, pageHeight - 15)
+      pdf.text(`Network: ${ssid}  |  Password: ${password || '(none)'}`, margin, pageHeight - 15)
     } else if (template === 'minimal') {
-      pdf.addImage(qrWithLogoUrl, 'PNG', (pageWidth - 70) / 2, margin + 15, 70, 70)
+      pdf.addImage(qrDataUrl, 'PNG', (pageWidth - 70) / 2, margin + 15, 70, 70)
       pdf.setFontSize(24)
       pdf.setFont('helvetica', 'bold')
       pdf.text(ssid, pageWidth / 2, margin + 105, { align: 'center' })
       pdf.setFontSize(14)
       pdf.setFont('helvetica', 'normal')
-      pdf.text(password, pageWidth / 2, margin + 118, { align: 'center' })
+      pdf.text(password || '(none)', pageWidth / 2, margin + 118, { align: 'center' })
       pdf.setDrawColor(0, 0, 0)
       pdf.line(margin + 50, margin + 130, pageWidth - margin - 50, margin + 130)
       pdf.setFontSize(10)
@@ -142,7 +104,7 @@ export default function WifiPage() {
       pdf.setFont('helvetica', 'bold')
       pdf.text('GUEST WiFi', pageWidth / 2, 30, { align: 'center' })
       pdf.setTextColor(0, 0, 0)
-      pdf.addImage(qrWithLogoUrl, 'PNG', margin + 25, 60, 65, 65)
+      pdf.addImage(qrDataUrl, 'PNG', margin + 25, 60, 65, 65)
       pdf.setFontSize(14)
       pdf.setFont('helvetica', 'bold')
       pdf.text('Network:', margin + 105, 80)
@@ -154,18 +116,18 @@ export default function WifiPage() {
       pdf.text('Password:', margin + 105, 110)
       pdf.setFontSize(16)
       pdf.setFont('helvetica', 'normal')
-      pdf.text(password, margin + 105, 122)
+      pdf.text(password || '(none)', margin + 105, 122)
     } else {
       pdf.setDrawColor(0, 0, 0)
       pdf.rect(margin, margin, pageWidth - margin * 2, pageHeight - margin * 2)
-      pdf.addImage(qrWithLogoUrl, 'PNG', (pageWidth - 75) / 2, margin + 20, 75, 75)
+      pdf.addImage(qrDataUrl, 'PNG', (pageWidth - 75) / 2, margin + 20, 75, 75)
       pdf.setFontSize(22)
       pdf.setFont('helvetica', 'bold')
       pdf.text('WiFi Network', pageWidth / 2, margin + 115, { align: 'center' })
       pdf.setFontSize(14)
       pdf.setFont('helvetica', 'normal')
       pdf.text(`SSID: ${ssid}`, pageWidth / 2, margin + 132, { align: 'center' })
-      pdf.text(`Password: ${password}`, pageWidth / 2, margin + 145, { align: 'center' })
+      pdf.text(`Password: ${password || '(none)'}`, pageWidth / 2, margin + 145, { align: 'center' })
     }
 
     pdf.save(`wifi-${ssid.replace(/\s+/g, '-').toLowerCase()}.pdf`)
@@ -271,11 +233,11 @@ export default function WifiPage() {
             <div className="bg-gray-50 rounded-2xl p-6">
               <h2 className="text-lg font-semibold mb-4">Preview</h2>
               <div className="bg-white rounded-xl border border-gray-200 p-6 min-h-[320px] flex flex-col items-center justify-center">
-                {previewDataUrl ? (
+                {qrDataUrl ? (
                   <div className="text-center">
-                    <img src={previewDataUrl} alt="WiFi QR Code" className="w-48 h-48 mx-auto" />
+                    <img src={qrDataUrl} alt="WiFi QR Code" className="w-48 h-48 mx-auto" />
                     <p className="font-semibold text-gray-900 mt-3">{ssid}</p>
-                    <p className="text-sm text-gray-500">{password}</p>
+                    <p className="text-sm text-gray-500">{password || '(no password)'}</p>
                     <p className="text-xs text-gray-400 mt-1 capitalize">{encryption}{hidden ? ' (hidden)' : ''}</p>
                   </div>
                 ) : (
