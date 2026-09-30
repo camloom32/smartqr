@@ -39,11 +39,17 @@ export default function CodePreviewPage() {
       setCode(codeData)
 
       const style = codeData.style_json || {}
-      const fg = encodeURIComponent(style.foregroundColor || '#000000')
-      const bg = encodeURIComponent(style.backgroundColor || '#ffffff')
-      const logoParam = style.logo ? `&logo=${encodeURIComponent(style.logo)}` : ''
 
-      const res = await fetch(`/api/qr/preview?url=${encodeURIComponent(`https://smartqr.id/c/${codeData.short_code}`)}&fg=${fg}&bg=${bg}${logoParam}`)
+      const res = await fetch('/api/qr/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: `https://smartqr.id/c/${codeData.short_code}`,
+          fg: style.foregroundColor || '#000000',
+          bg: style.backgroundColor || '#ffffff',
+          logo: style.logo || null,
+        }),
+      })
       const data = await res.json()
       setQrImage(data.png || '')
       setLoading(false)
