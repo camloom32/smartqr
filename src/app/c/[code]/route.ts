@@ -86,16 +86,22 @@ export async function GET(
   const deviceCategory = parseDeviceCategory(userAgent)
   const { country, region, city } = await geoLookup(clientIp)
 
-  supabase.from('scan_events').insert({
-    code_id: qrCode.id,
-    client_ip: clientIp,
-    user_agent: userAgent,
-    device_category: deviceCategory,
-    country,
-    region,
-    city,
-    referrer: req.headers.get('referer') || null,
-  }).then(() => {}).catch(() => {})
+  ;(async () => {
+    try {
+      await supabase.from('scan_events').insert({
+        code_id: qrCode.id,
+        client_ip: clientIp,
+        user_agent: userAgent,
+        device_category: deviceCategory,
+        country,
+        region,
+        city,
+        referrer: req.headers.get('referer') || null,
+      })
+    } catch {
+      // ignore scan logging errors
+    }
+  })()
 
   return NextResponse.redirect(qrCode.destination_url, 302)
 }
