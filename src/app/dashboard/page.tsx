@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import type { Database } from '@/lib/supabase/database.types'
@@ -8,7 +9,9 @@ export default async function DashboardPage() {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) return null
+  if (!user) {
+    redirect('/login')
+  }
 
   const { data: codes } = await supabase
     .from('dynamic_codes')

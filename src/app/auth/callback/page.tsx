@@ -4,14 +4,13 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
 
 export default function AuthCallback() {
+  const [status, setStatus] = useState('Completing sign in...')
   const [error, setError] = useState('')
-  const router = useRouter()
 
   useEffect(() => {
-    const handleAuth = async () => {
+    const checkAuth = async () => {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
       if (sessionError) {
@@ -20,19 +19,14 @@ export default function AuthCallback() {
       }
 
       if (session) {
-        router.push('/dashboard')
+        window.location.href = '/dashboard'
       } else {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-          if (event === 'SIGNED_IN' || session) {
-            router.push('/dashboard')
-          }
-        })
-        return () => subscription.unsubscribe()
+        setError('No session found')
       }
     }
 
-    handleAuth()
-  }, [router])
+    checkAuth()
+  }, [])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -46,7 +40,7 @@ export default function AuthCallback() {
             <Link href="/login" className="text-blue-600 hover:underline">Back to login</Link>
           </div>
         ) : (
-          <p className="text-lg text-gray-600">Completing sign in...</p>
+          <p className="text-lg text-gray-600">{status}</p>
         )}
       </div>
     </div>
