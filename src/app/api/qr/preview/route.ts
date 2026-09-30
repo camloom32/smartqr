@@ -19,7 +19,18 @@ async function generateQR(url: string, fg: string, bg: string, logoBase64?: stri
     try {
       const base64Data = logoBase64.replace(/^data:image\/\w+;base64,/, '')
       const logoBuffer = Buffer.from(base64Data, 'base64')
-      const logoResized = await sharp(logoBuffer).resize(80, 80, { fit: 'contain' }).toBuffer()
+      const logoSize = 80
+      const padding = 12
+      const logoResized = await sharp(logoBuffer).resize(logoSize, logoSize, { fit: 'contain' }).toBuffer()
+
+      const paddedLogo = await sharp({
+        create: {
+          width: logoSize + padding * 2,
+          height: logoSize + padding * 2,
+          channels: 4,
+          background: { r: 255, g: 255, b: 255, alpha: 1 }
+        }
+      }).composite([{ input: logoResized, gravity: 'center' }]).png().toBuffer()
 
       const qrBase64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
       const qrBuffer = Buffer.from(qrBase64, 'base64')
@@ -33,10 +44,10 @@ async function generateQR(url: string, fg: string, bg: string, logoBase64?: stri
       }).composite([
         { input: qrBuffer, blend: 'over' },
         {
-          input: logoResized,
+          input: paddedLogo,
           blend: 'over',
-          top: Math.floor((size - 80) / 2),
-          left: Math.floor((size - 80) / 2),
+          top: Math.floor((size - (logoSize + padding * 2)) / 2),
+          left: Math.floor((size - (logoSize + padding * 2)) / 2),
         }
       ]).png().toBuffer()
 

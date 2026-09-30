@@ -39,7 +39,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Destination URL required' }, { status: 400 })
   }
 
-  // Check subscription
   const { data: subscription } = await supabase
     .from('subscriptions')
     .select('tier, status')
@@ -49,7 +48,6 @@ export async function POST(req: NextRequest) {
 
   const tier = subscription?.tier || 'free'
 
-  // Check code limit based on tier
   const { count } = await supabase
     .from('dynamic_codes')
     .select('id', { count: 'exact' })
@@ -59,14 +57,13 @@ export async function POST(req: NextRequest) {
   const maxCodes = tier === 'free' ? 1 : tier === 'starter' ? 3 : 15
   if ((count || 0) >= maxCodes) {
     return NextResponse.json(
-      { error: tier === 'free' 
-        ? 'Free plan includes 1 QR code. Upgrade to Starter for 3 codes.' 
+      { error: tier === 'free'
+        ? 'Free plan includes 1 QR code. Upgrade to Starter for 3 codes.'
         : `Your ${tier} plan allows up to ${maxCodes} active codes` },
       { status: 403 }
     )
   }
 
-  // Generate unique short code
   let shortCode = generateCodeId()
   let attempts = 0
   while (attempts < 10) {

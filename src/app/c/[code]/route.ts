@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { headers } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
+import { cookies, headers } from 'next/headers'
 
 function parseDeviceCategory(ua: string): 'mobile_ios' | 'mobile_android' | 'desktop' | 'tablet' | 'other' {
   const lower = ua.toLowerCase()
@@ -13,9 +13,7 @@ function parseDeviceCategory(ua: string): 'mobile_ios' | 'mobile_android' | 'des
 
 async function geoLookup(ip: string): Promise<{ country: string; region: string; city: string }> {
   try {
-    const res = await fetch(`http://ip-api.com/json/${ip}?fields=country,regionName,city`, {
-      next: { revalidate: 3600 },
-    } as any)
+    const res = await fetch(`http://ip-api.com/json/${ip}?fields=country,regionName,city`)
     if (!res.ok) return { country: 'Unknown', region: 'Unknown', city: 'Unknown' }
     const data = await res.json()
     return {
@@ -35,7 +33,7 @@ export async function GET(
   const { code } = await params
 
   if (!code) {
-    return NextResponse.redirect(new URL('/expired', req.url))
+    return NextResponse.redirect(new URL('/not-found', req.url))
   }
 
   const headersList = await headers()
@@ -45,9 +43,19 @@ export async function GET(
     || headersList.get('x-real-ip')
     || 'unknown'
 
-  const supabase = await createServerSupabaseClient()
+  const cookieStore = await cookies()
+  const accessToken = cookieStore.get('sb-access-token')?.value
 
-  // Look up the code
+  const supabaseOptions = accessToken
+    ? { global: { headers: { Authorization: `Bearer ${accessToken}` } }, auth: { persistSession: false, autoRefreshToken: false } }
+    : { auth: { persistSession: false, autoRefreshToken: false } }
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseOptions
+  )
+
   const { data: qrCode, error } = await supabase
     .from('dynamic_codes')
     .select('id, destination_url, is_active, user_id')
@@ -62,7 +70,6 @@ export async function GET(
     return NextResponse.redirect(new URL('/deactivated', req.url))
   }
 
-  // Check if user has an active subscription
   const { data: subscription } = await supabase
     .from('subscriptions')
     .select('status, tier')
@@ -76,28 +83,19 @@ export async function GET(
     return NextResponse.redirect(new URL(`/expired?code=${code}`, req.url))
   }
 
-  // Log the scan event (async, don't block redirect)
   const deviceCategory = parseDeviceCategory(userAgent)
   const { country, region, city } = await geoLookup(clientIp)
 
-  // Fire and forget the scan log
-  Promise.resolve().then(async () => {
-    try {
-      await supabase.from('scan_events').insert({
-        code_id: qrCode.id,
-        client_ip: clientIp,
-        user_agent: userAgent,
-        device_category: deviceCategory,
-        country,
-        region,
-        city,
-        referrer: req.headers.get('referer') || null,
-      })
-    } catch {
-      // ignore
-    }
-  })
+  supabase.from('scan_events').insert({
+    code_id: qrCode.id,
+    client_ip: clientIp,
+    user_agent: userAgent,
+    device_category: deviceCategory,
+    country,
+    region,
+    city,
+    referrer: req.headers.get('referer') || null,
+  }).then(() => {}).catch(() => {})
 
-  // Redirect to destination
   return NextResponse.redirect(qrCode.destination_url, 302)
 }
