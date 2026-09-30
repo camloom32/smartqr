@@ -31,8 +31,9 @@ export default function HomePage() {
       </header>
 
       {/* Hero */}
-      <section className="py-24 px-6">
+      <section className="py-16 px-6">
         <div className="max-w-4xl mx-auto text-center">
+          <Image src="/logo.png" alt="SmartQR" width={280} height={80} className="mx-auto mb-8 h-20 w-auto" priority />
           <h1 className="text-5xl font-bold text-gray-900 tracking-tight mb-6">
             QR codes that drive results
           </h1>
