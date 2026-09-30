@@ -10,12 +10,12 @@ export default function AuthCallback() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const handleHashSession = async () => {
+    const handleCallback = async () => {
       const hash = window.location.hash
-      console.log('Hash in URL:', hash)
+      console.log('Callback URL:', window.location.href)
+      console.log('Hash:', hash)
 
       if (hash && hash.includes('access_token')) {
-        console.log('Found access token in hash')
         setStatus('Found token, logging in...')
 
         const hashParams = new URLSearchParams(hash.substring(1))
@@ -27,7 +27,6 @@ export default function AuthCallback() {
           return
         }
 
-        console.log('Calling setSession...')
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken || '',
@@ -35,39 +34,43 @@ export default function AuthCallback() {
 
         if (sessionError) {
           console.error('setSession error:', sessionError)
-          setError(sessionError.message)
+          setError('setSession failed: ' + sessionError.message)
           return
         }
 
-        console.log('Session set! Redirecting to dashboard...')
         window.location.href = '/dashboard'
         return
       }
 
       const params = new URLSearchParams(window.location.search)
       const code = params.get('code')
-      console.log('Code in URL:', code)
+      console.log('Code:', code)
 
       if (code) {
-        console.log('Exchanging code for session...')
-        const { data: { user }, error: authError } = await supabase.auth.exchangeCodeForSession(code)
+        setStatus('Exchanging code...')
+        const { data, error: authError } = await supabase.auth.exchangeCodeForSession(code)
 
-        if (authError || !user) {
+        console.log('exchangeCodeForSession result:', data, authError)
+
+        if (authError) {
           console.error('Code exchange error:', authError)
-          setError(authError?.message || 'auth_failed')
+          setError('Code exchange failed: ' + authError.message)
           return
         }
 
-        console.log('Code exchanged! Redirecting to dashboard...')
+        if (!data?.user) {
+          setError('No user returned')
+          return
+        }
+
         window.location.href = '/dashboard'
         return
       }
 
-      console.log('No auth data found in URL')
       setError('no_auth_data')
     }
 
-    handleHashSession()
+    handleCallback()
   }, [])
 
   return (
