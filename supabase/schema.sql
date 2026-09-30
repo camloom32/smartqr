@@ -307,3 +307,28 @@ INSERT INTO public.tiers (id, name, price_monthly_cents, price_yearly_cents, max
   ('starter', 'Starter', 900, 7900, 3, TRUE, TRUE, FALSE, FALSE, FALSE, 1),
   ('growth', 'Growth', 1900, 15900, 15, TRUE, TRUE, TRUE, FALSE, TRUE, 3)
 ON CONFLICT (id) DO NOTHING;
+
+-- =============================================================================
+-- FUNCTION: Get scan summary for a code
+-- =============================================================================
+
+CREATE OR REPLACE FUNCTION get_scan_summary(code_id_param UUID)
+RETURNS TABLE (
+  total_scans BIGINT,
+  unique_visitors BIGINT,
+  today_scans BIGINT,
+  this_week BIGINT,
+  this_month BIGINT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    COUNT(*)::BIGINT AS total_scans,
+    COUNT(DISTINCT client_ip)::BIGINT AS unique_visitors,
+    COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE)::BIGINT AS today_scans,
+    COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE - INTERVAL '7 days')::BIGINT AS this_week,
+    COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE - INTERVAL '30 days')::BIGINT AS this_month
+  FROM scan_events
+  WHERE code_id = code_id_param;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
