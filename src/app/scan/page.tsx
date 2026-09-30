@@ -3,56 +3,55 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { BrowserMultiFormatReader } from '@zxing/browser'
+import { Html5Qrcode } from 'html5-qrcode'
 
 export default function ScanPage() {
   const [scannedResult, setScannedResult] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
   const [cameraActive, setCameraActive] = useState(false)
   const [copied, setCopied] = useState(false)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null)
+  const [cameraError, setCameraError] = useState('')
+  const scannerRef = useRef<Html5Qrcode | null>(null)
+  const [isScanning, setIsScanning] = useState(false)
 
   const startCamera = async () => {
     setError('')
-    setLoading(true)
+    setCameraError('')
     try {
-      codeReaderRef.current = new BrowserMultiFormatReader()
-      const devices = await BrowserMultiFormatReader.listVideoInputDevices()
+      scannerRef.current = new Html5Qrcode('qr-reader')
+      setIsScanning(true)
+      setCameraActive(true)
       
-      if (devices.length === 0) {
-        setError('No camera found on this device')
-        setLoading(false)
-        return
+      await scannerRef.current.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+        },
+        (decodedText) => {
+          setScannedResult(decodedText)
+          stopCamera()
+        },
+        () => {}
+      )
+    } catch (err: any) {
+      setIsScanning(false)
+      setCameraActive(false)
+      if (err?.message?.includes('Permission')) {
+        setCameraError('Camera permission denied. Please allow camera access.')
+      } else {
+        setCameraError('Could not start camera. Try uploading an image instead.')
       }
-
-      const deviceId = devices[0].deviceId
-      
-      if (videoRef.current) {
-        codeReaderRef.current.decodeFromVideoDevice(
-          deviceId,
-          videoRef.current,
-          (result, err) => {
-            if (result) {
-              setScannedResult(result.getText())
-              stopCamera()
-            }
-          }
-        )
-        setCameraActive(true)
-      }
-    } catch (err) {
-      setError('Could not access camera. Please check permissions.')
     }
-    setLoading(false)
   }
 
-  const stopCamera = () => {
-    if (codeReaderRef.current) {
-      codeReaderRef.current.stopAsyncDecode()
-      codeReaderRef.current = null
+  const stopCamera = async () => {
+    if (scannerRef.current && scannerRef.current.isScanning) {
+      try {
+        await scannerRef.current.stop()
+      } catch {}
     }
+    setIsScanning(false)
     setCameraActive(false)
   }
 
@@ -61,35 +60,14 @@ export default function ScanPage() {
     if (!file) return
 
     setError('')
-    setLoading(true)
+    setCameraError('')
     try {
-      const reader = new FileReader()
-      reader.onload = async () => {
-        const img = new Image()
-        img.onload = async () => {
-          const canvas = document.createElement('canvas')
-          canvas.width = img.width
-          canvas.height = img.height
-          const ctx = canvas.getContext('2d')
-          if (ctx) {
-            ctx.drawImage(img, 0, 0)
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-            const codeReader = new BrowserMultiFormatReader()
-            try {
-              const result = await codeReader.decodeFromImageElement(img)
-              setScannedResult(result.getText())
-            } catch {
-              setError('Could not find a QR code in this image')
-            }
-          }
-        }
-        img.src = reader.result as string
-      }
-      reader.readAsDataURL(file)
+      const scanner = new Html5Qrcode('qr-reader')
+      const result = await scanner.scanFile(file, false)
+      setScannedResult(result)
     } catch {
-      setError('Failed to read image')
+      setError('Could not find a QR code in this image')
     }
-    setLoading(false)
   }
 
   const copyResult = async () => {
@@ -109,7 +87,9 @@ export default function ScanPage() {
 
   useEffect(() => {
     return () => {
-      stopCamera()
+      if (scannerRef.current && scannerRef.current.isScanning) {
+        scannerRef.current.stop().catch(() => {})
+      }
     }
   }, [])
 
@@ -135,27 +115,20 @@ export default function ScanPage() {
         </div>
 
         <div className="bg-gray-50 rounded-2xl p-6 mb-8">
+          <div id="qr-reader" className="w-full" />
+
           {!cameraActive ? (
             <div className="space-y-4">
-              <video
-                ref={videoRef}
-                className="w-full rounded-xl bg-black aspect-video hidden"
-                autoPlay
-                playsInline
-                muted
-              />
-              
               <div className="grid sm:grid-cols-2 gap-4">
                 <button
                   onClick={startCamera}
-                  disabled={loading}
-                  className="py-4 px-6 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition disabled:opacity-50 flex flex-col items-center gap-2"
+                  className="py-4 px-6 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition flex flex-col items-center gap-2"
                 >
                   <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  {loading ? 'Starting...' : 'Use Camera'}
+                  Use Camera
                 </button>
 
                 <label className="py-4 px-6 bg-white border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:border-blue-400 hover:text-blue-600 transition cursor-pointer flex flex-col items-center gap-2">
@@ -173,28 +146,22 @@ export default function ScanPage() {
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              <video
-                ref={videoRef}
-                className="w-full rounded-xl bg-black aspect-video"
-                autoPlay
-                playsInline
-                muted
-              />
-              <div className="flex justify-center">
-                <button
-                  onClick={stopCamera}
-                  className="px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition"
-                >
-                  Stop Camera
-                </button>
-              </div>
-              <p className="text-center text-sm text-gray-500">
-                Point your camera at a QR code
-              </p>
+            <div className="mt-4">
+              <button
+                onClick={stopCamera}
+                className="w-full py-3 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 transition"
+              >
+                Stop Camera
+              </button>
             </div>
           )}
         </div>
+
+        {cameraError && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-center">
+            {cameraError}
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-center">
