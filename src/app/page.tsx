@@ -43,10 +43,10 @@ export default function HomePage() {
           </p>
           <div className="flex items-center justify-center gap-4">
             <Link
-              href="/signup"
+              href="/create"
               className="px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-xl hover:bg-blue-700 transition"
             >
-              Start for free
+              Create QR Code
             </Link>
             <Link
               href="/pricing"
@@ -110,10 +110,10 @@ export default function HomePage() {
             Free forever for static codes. No credit card required.
           </p>
           <Link
-            href="/signup"
+            href="/create"
             className="inline-block px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-xl hover:bg-blue-700 transition"
           >
-            Create your free account
+            Create a QR code
           </Link>
         </div>
       </section>

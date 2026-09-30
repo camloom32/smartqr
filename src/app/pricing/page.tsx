@@ -15,8 +15,8 @@ const TIERS = [
       'No analytics',
       'No dynamic editing',
     ],
-    cta: 'Get started',
-    href: '/signup',
+    cta: 'Create QR codes',
+    href: '/create',
     highlighted: false,
   },
   {

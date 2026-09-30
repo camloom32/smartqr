@@ -31,21 +31,19 @@ export async function POST(req: NextRequest) {
 
   const tier = subscription?.tier || 'free'
 
-  if (tier === 'free') {
-    return NextResponse.json({ error: 'Dynamic codes require a paid plan' }, { status: 403 })
-  }
-
-  // Check code limit
+  // Check code limit based on tier
   const { count } = await supabase
     .from('dynamic_codes')
     .select('id', { count: 'exact' })
     .eq('user_id', user.id)
     .eq('is_active', true)
 
-  const maxCodes = tier === 'starter' ? 3 : 15
+  const maxCodes = tier === 'free' ? 1 : tier === 'starter' ? 3 : 15
   if ((count || 0) >= maxCodes) {
     return NextResponse.json(
-      { error: `Your ${tier} plan allows up to ${maxCodes} active codes` },
+      { error: tier === 'free' 
+        ? 'Free plan includes 1 QR code. Upgrade to Starter for 3 codes.' 
+        : `Your ${tier} plan allows up to ${maxCodes} active codes` },
       { status: 403 }
     )
   }
