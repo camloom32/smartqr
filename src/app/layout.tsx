@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import AuthHandler from '@/components/AuthHandler'
 
 export const metadata: Metadata = {
   title: 'SmartQR — QR codes built for business',
@@ -16,7 +17,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        {children}
+        <AuthHandler />
+      </body>
     </html>
   )
 }
