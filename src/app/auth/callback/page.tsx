@@ -58,10 +58,19 @@ export default function AuthCallback() {
           return
         }
 
-        if (!data?.user) {
-          setError('No user returned')
+        if (!data?.session) {
+          setError('No session returned')
           return
         }
+
+        await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          }),
+        })
 
         window.location.href = '/dashboard'
         return

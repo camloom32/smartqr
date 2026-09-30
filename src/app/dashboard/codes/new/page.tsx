@@ -14,7 +14,6 @@ export default function NewCodePage() {
   const [fgColor, setFgColor] = useState('#000000')
   const [bgColor, setBgColor] = useState('#ffffff')
   const [logo, setLogo] = useState<File | null>(null)
-  const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState('')
   const [previewSvg, setPreviewSvg] = useState('')
   const [loading, setLoading] = useState(false)
@@ -42,6 +41,15 @@ export default function NewCodePage() {
     fetchData()
   }, [])
 
+  const getBase64FromFile = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }
+
   useEffect(() => {
     if (!destinationUrl) {
       setPreviewUrl('')
@@ -51,9 +59,15 @@ export default function NewCodePage() {
 
     const timer = setTimeout(async () => {
       try {
-        const params = new URLSearchParams({ url: destinationUrl, fg: fgColor, bg: bgColor })
-        if (logoPreview) params.set('logo', logoPreview)
-        const res = await fetch(`/api/qr/preview?${params}`)
+        const body: Record<string, string> = { url: destinationUrl, fg: fgColor, bg: bgColor }
+        if (logo) {
+          body.logo = await getBase64FromFile(logo)
+        }
+        const res = await fetch('/api/qr/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
         const data = await res.json()
         setPreviewUrl(data.png || '')
         setPreviewSvg(data.svg || '')
@@ -63,13 +77,12 @@ export default function NewCodePage() {
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [destinationUrl, fgColor, bgColor, logoPreview])
+  }, [destinationUrl, fgColor, bgColor, logo])
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     setLogo(file)
-    setLogoPreview(URL.createObjectURL(file))
   }
 
   const maxCodes = plan === 'starter' ? 3 : 15
@@ -213,11 +226,12 @@ export default function NewCodePage() {
 
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Preview</h2>
-          <div className="flex items-center justify-center bg-gray-100 rounded-xl" style={{ minHeight: 280 }}>
-            {previewSvg ? (
-              <div
-                dangerouslySetInnerHTML={{ __html: previewSvg }}
-                className="p-4"
+          <div className="flex items-center justify-center bg-gray-100 rounded-xl overflow-hidden" style={{ minHeight: 280 }}>
+            {previewUrl ? (
+              <img
+                src={previewUrl}
+                alt="QR Preview"
+                className="max-w-full max-h-full object-contain"
                 style={{ width: 200, height: 200 }}
               />
             ) : (
