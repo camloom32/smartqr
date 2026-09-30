@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import Header from '@/components/Header'
 
 function rgbToHex(r: number, g: number, b: number): string {
   return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')
@@ -202,16 +203,7 @@ export default function AnalyzePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <header className="border-b">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/">
-            <Image src="/logo.png" alt="SmartQR" width={140} height={40} className="h-10 w-auto" />
-          </Link>
-          <Link href="/pricing" className="text-sm font-medium text-blue-600 hover:text-blue-700">
-            Upgrade
-          </Link>
-        </div>
-      </header>
+      <Header />
 
       <main className="max-w-2xl mx-auto px-6 py-12">
         <div className="text-center mb-10">

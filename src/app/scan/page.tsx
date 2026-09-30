@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Html5Qrcode } from 'html5-qrcode'
+import Header from '@/components/Header'
 
 export default function ScanPage() {
   const [scannedResult, setScannedResult] = useState('')
@@ -95,16 +96,7 @@ export default function ScanPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <header className="border-b">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/">
-            <Image src="/logo.png" alt="SmartQR" width={140} height={40} className="h-10 w-auto" />
-          </Link>
-          <Link href="/pricing" className="text-sm font-medium text-blue-600 hover:text-blue-700">
-            Upgrade
-          </Link>
-        </div>
-      </header>
+      <Header />
 
       <main className="max-w-xl mx-auto px-6 py-12">
         <div className="text-center mb-10">
