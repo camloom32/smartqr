@@ -1,6 +1,16 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import ToolLinks from '@/components/ToolLinks'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 const TIERS = [
   {
@@ -38,6 +48,7 @@ const TIERS = [
     cta: 'Start free trial',
     href: '/signup?plan=starter',
     highlighted: true,
+    checkout: 'starter',
   },
   {
     id: 'growth',
@@ -55,10 +66,42 @@ const TIERS = [
     cta: 'Start free trial',
     href: '/signup?plan=growth',
     highlighted: false,
+    checkout: 'growth',
   },
 ]
 
 export default function PricingPage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState<string | null>(null)
+
+  async function handleCheckout(plan: string) {
+    setLoading(plan)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push(`/signup?plan=${plan}`)
+        return
+      }
+
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, userId: user.id }),
+      })
+
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        console.error('Checkout error:', data.error)
+        setLoading(null)
+      }
+    } catch (err) {
+      console.error('Checkout error:', err)
+      setLoading(null)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <Header />
@@ -111,16 +154,30 @@ export default function PricingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href={tier.href}
-                  className={`block w-full text-center py-3 px-4 rounded-xl font-semibold transition ${
-                    tier.highlighted
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                  }`}
-                >
-                  {tier.cta}
-                </Link>
+                {'checkout' in tier && tier.checkout ? (
+                  <button
+                    onClick={() => handleCheckout(tier.checkout as string)}
+                    disabled={loading === tier.checkout}
+                    className={`w-full py-3 px-4 rounded-xl font-semibold transition ${
+                      tier.highlighted
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                    } disabled:opacity-50`}
+                  >
+                    {loading === tier.checkout ? 'Redirecting...' : tier.cta}
+                  </button>
+                ) : (
+                  <Link
+                    href={tier.href}
+                    className={`block w-full text-center py-3 px-4 rounded-xl font-semibold transition ${
+                      tier.highlighted
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                    }`}
+                  >
+                    {tier.cta}
+                  </Link>
+                )}
               </div>
             ))}
           </div>

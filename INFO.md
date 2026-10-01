@@ -19,12 +19,12 @@
 - Storage bucket: `qr-codes`
 
 ## Stripe
-- **Publishable key**: (from Stripe dashboard)
-- **Secret key**: (from Stripe dashboard)
-- **Webhook secret**: (from Stripe dashboard)
-- **Price IDs needed**:
-  - Starter: $9/mo (3 dynamic codes)
-  - Growth: $19/mo (15 dynamic codes)
+- **Publishable key**: `pk_live_...` (in Vercel env vars)
+- **Secret key**: `rk_live_...` (in Vercel env vars)
+- **Webhook secret**: `whsec_PFwaZoBKunnTnzh3bWvakjPDwixhkFuY`
+- **Products & Prices**: Created via API
+  - Starter: `price_1ULtLxI5JKZ67FIHMxv3nYoo` ($9/mo)
+  - Growth: `price_1ULtM7I5JKZ67FIHU21RVPOJ` ($19/mo)
 
 ## Vercel
 - Connect repo: `camloom32/smartqr` (or create new)
