@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import '@vercel/analytics'
 
 export const metadata: Metadata = {
   title: 'SmartQR — QR codes built for business',
