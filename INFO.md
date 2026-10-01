@@ -19,9 +19,9 @@
 - Storage bucket: `qr-codes`
 
 ## Stripe
-- **Publishable key**: `pk_live_...` (in Vercel env vars)
-- **Secret key**: `rk_live_...` (in Vercel env vars)
-- **Webhook secret**: `whsec_PFwaZoBKunnTnzh3bWvakjPDwixhkFuY`
+- **Publishable key**: (in Vercel env vars)
+- **Secret key**: (in Vercel env vars)
+- **Webhook secret**: (in Vercel env vars)
 - **Products & Prices**: Created via API
   - Starter: `price_1ULtLxI5JKZ67FIHMxv3nYoo` ($9/mo)
   - Growth: `price_1ULtM7I5JKZ67FIHU21RVPOJ` ($19/mo)
