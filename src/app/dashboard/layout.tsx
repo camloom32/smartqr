@@ -1,11 +1,52 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { createClient } from '@supabase/supabase-js'
+import { useRouter } from 'next/navigation'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const router = useRouter()
+  const [billingLoading, setBillingLoading] = useState(false)
+
+  async function handleManageBilling() {
+    setBillingLoading(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/login')
+        return
+      }
+
+      const res = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      })
+
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        console.error('Portal error:', data.error)
+        setBillingLoading(false)
+      }
+    } catch (err) {
+      console.error('Portal error:', err)
+      setBillingLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b">
@@ -17,6 +58,13 @@ export default function DashboardLayout({
             <Link href="/dashboard" className="text-sm font-medium text-gray-600 hover:text-gray-900">
               My Codes
             </Link>
+            <button
+              onClick={handleManageBilling}
+              disabled={billingLoading}
+              className="text-sm font-medium text-gray-600 hover:text-gray-900 disabled:opacity-50"
+            >
+              {billingLoading ? 'Loading...' : 'Manage Billing'}
+            </button>
             <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
               Sign out
             </Link>
