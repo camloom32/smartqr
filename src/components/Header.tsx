@@ -3,15 +3,46 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [tier, setTier] = useState<string>('free')
   const menuRef = useRef<HTMLDivElement>(null)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setUser(session?.user || null)
+      if (!session?.user) {
+        setTier('free')
+        return
+      }
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('tier')
+        .eq('user_id', session.user.id)
+        .in('status', ['active', 'trialing'])
+        .maybeSingle()
+      setTier(sub?.tier || 'free')
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false)
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClick)
@@ -105,12 +136,67 @@ export default function Header() {
           <Link href="/pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900">
             Pricing
           </Link>
-          <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-            Sign in
-          </Link>
-          <Link href="/signup" className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition">
-            Get Started
-          </Link>
+          {user ? (
+            <div ref={userMenuRef} className="relative">
+              <button
+                onClick={() => setUserMenuOpen((o) => !o)}
+                className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
+              >
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-blue-700 font-semibold text-sm">
+                    {user.email?.charAt(0).toUpperCase() || '?'}
+                  </span>
+                </div>
+                <span className="capitalize">{tier}</span>
+                <svg className={`w-4 h-4 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-50">
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    My Dashboard
+                  </Link>
+                  <Link
+                    href="/dashboard/codes/new"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    Create QR Code
+                  </Link>
+                  <div className="border-t border-gray-100 my-1" />
+                  <Link
+                    href="/api/stripe/portal"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    Manage Billing
+                  </Link>
+                  <button
+                    onClick={async () => {
+                      await supabase.auth.signOut()
+                      window.location.href = '/'
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+                Sign in
+              </Link>
+              <Link href="/signup" className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition">
+                Get Started
+              </Link>
+            </>
+          )}
         </nav>
       </div>
     </header>

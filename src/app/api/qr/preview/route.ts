@@ -72,11 +72,6 @@ async function generateQR(
     backgroundOptions: { color: bg },
   }
 
-  if (logo) {
-    qrOptions.image = logo.startsWith('data:') ? logo : `data:image/png;base64,${logo}`
-    qrOptions.imageOptions = { mode: 'center', fill: { color: bg }, imageSize: 0.4, margin: 8, crossOrigin: 'anonymous' }
-  }
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const qrCode = new QRCodeStyling(qrOptions as any)
 
@@ -87,6 +82,10 @@ async function generateQR(
   const pngBuffer = await sharp(Buffer.from(svgString)).png().toBuffer()
   let pngBase64 = pngBuffer.toString('base64')
 
+  if (logo) {
+    pngBase64 = await compositeLogo(pngBase64, logo, size)
+  }
+
   if (frame && frame !== 'none') {
     pngBase64 = await applyFrame(pngBase64, frame, fg, caption, subcaption, size)
   }
@@ -96,6 +95,40 @@ async function generateQR(
     png: `data:image/png;base64,${pngBase64}`,
     dotType,
   }
+}
+
+async function compositeLogo(qrBase64: string, logoDataUrl: string, size: number): Promise<string> {
+  const qrBuffer = Buffer.from(qrBase64, 'base64')
+  const logoBuffer = Buffer.from(logoDataUrl.replace(/^data:image\/\w+;base64,/, ''), 'base64')
+
+  const logoMeta = await sharp(logoBuffer).metadata()
+  const maxLogoSize = Math.round(size * 0.22)
+  const logoAspect = (logoMeta.width || 100) / (logoMeta.height || 100)
+  const logoHeight = logoAspect >= 1 ? Math.round(maxLogoSize / logoAspect) : maxLogoSize
+  const logoWidth = logoAspect >= 1 ? maxLogoSize : Math.round(maxLogoSize * logoAspect)
+
+  const resizedLogo = await sharp(logoBuffer)
+    .resize(logoWidth, logoHeight)
+    .ensureAlpha()
+    .png()
+    .toBuffer()
+
+  const qrMeta = await sharp(qrBuffer).metadata()
+  const qrActualSize = qrMeta.width || size
+
+  const x = Math.round((qrActualSize - logoWidth) / 2)
+  const y = Math.round((qrActualSize - logoHeight) / 2)
+
+  const withLogo = await sharp(qrBuffer)
+    .composite([{
+      input: resizedLogo,
+      top: y,
+      left: x,
+    }])
+    .png()
+    .toBuffer()
+
+  return withLogo.toString('base64')
 }
 
 async function applyFrame(

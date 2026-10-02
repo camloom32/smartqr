@@ -145,7 +145,7 @@ export default function PricingPage() {
 
   function getButtonCta(tier: Tier) {
     if (tier.id === 'free') return { text: 'Create QR codes', href: '/create', disabled: false }
-    if (currentTier === tier.id && currentStatus === 'active') {
+    if (currentTier === tier.id && (currentStatus === 'active' || currentStatus === 'trialing')) {
       return { text: 'Current Plan', href: '/dashboard', disabled: true }
     }
     if (currentTier === 'growth' && tier.id === 'starter') {
