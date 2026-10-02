@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
       subscription_data: {
         metadata: { userId, plan, billing },
         trial_period_days: 14,
+        ...(billing === 'yearly' ? { coupon: process.env.STRIPE_ANNUAL_COUPON_ID } : {}),
       },
     })
 

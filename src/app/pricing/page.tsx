@@ -188,7 +188,7 @@ export default function PricingPage() {
                 }`}
               >
                 Yearly
-                <span className="ml-2 text-green-600 text-xs font-semibold">Save ~27%</span>
+                <span className="ml-2 text-green-600 text-xs font-semibold">Save 50% off first year</span>
               </button>
             </div>
           </div>
