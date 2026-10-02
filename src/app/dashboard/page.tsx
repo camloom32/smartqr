@@ -12,6 +12,7 @@ type Code = {
   title: string | null
   is_active: boolean
   created_at: string
+  user_id?: string
 }
 
 export default function DashboardPage() {
@@ -20,6 +21,7 @@ export default function DashboardPage() {
   const [codes, setCodes] = useState<Code[]>([])
   const [tier, setTier] = useState('free')
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
+  const [teamOwnerEmail, setTeamOwnerEmail] = useState<string | null>(null)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -32,13 +34,34 @@ export default function DashboardPage() {
 
       setUser(session.user)
 
-      const [codesResult, subResult] = await Promise.all([
-        supabase.from('dynamic_codes').select('id, short_code, destination_url, title, is_active, created_at').eq('user_id', session.user.id).eq('is_active', true).order('created_at', { ascending: false }),
-        supabase.from('subscriptions').select('tier, status').eq('user_id', session.user.id).eq('status', 'active').single(),
+      const [codesResult, subResult, teamResult] = await Promise.all([
+        supabase.from('dynamic_codes').select('id, short_code, destination_url, title, is_active, created_at, user_id').eq('user_id', session.user.id).eq('is_active', true).order('created_at', { ascending: false }),
+        supabase.from('subscriptions').select('tier, status').eq('user_id', session.user.id).eq('status', 'active').maybeSingle(),
+        supabase.from('team_members').select('owner_id, accepted_at').eq('member_email', session.user.email?.toLowerCase()).not('accepted_at', 'is', null).maybeSingle(),
       ])
 
-      setCodes(codesResult.data || [])
-      setTier(subResult.data?.tier || 'free')
+      let allCodes = codesResult.data || []
+      const userTier = subResult?.data?.tier || 'free'
+      setTier(userTier)
+
+      if (teamResult?.data) {
+        const ownerId = teamResult.data.owner_id
+        const { data: ownerProfile } = await supabase.from('profiles').select('email').eq('id', ownerId).single()
+        if (ownerProfile?.email) setTeamOwnerEmail(ownerProfile.email)
+
+        const { data: teamCodes } = await supabase
+          .from('dynamic_codes')
+          .select('id, short_code, destination_url, title, is_active, created_at, user_id')
+          .eq('user_id', ownerId)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+
+        if (teamCodes) {
+          allCodes = [...allCodes, ...teamCodes]
+        }
+      }
+
+      setCodes(allCodes)
       setLoading(false)
     }
 
@@ -87,9 +110,16 @@ export default function DashboardPage() {
 
   return (
     <div>
+      {teamOwnerEmail && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+          <p className="text-sm text-blue-700">
+            You are viewing QR codes from <strong>{teamOwnerEmail}&apos;s</strong> team. Contact them to manage codes.
+          </p>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My QR Codes</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{teamOwnerEmail ? 'Team QR Codes' : 'My QR Codes'}</h1>
           <p className="text-sm text-gray-500 mt-1">
             {codeCount} code{codeCount !== 1 ? 's' : ''}
             {tier !== 'free' && ` · ${tier} plan (${maxCodes} max)`}
