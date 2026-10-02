@@ -116,7 +116,9 @@ export default function PricingPage() {
         return
       }
 
-      const res = await fetch('/api/stripe/checkout', {
+      const isUpgrade = currentTier && currentTier !== 'free'
+
+      const res = await fetch(isUpgrade ? '/api/stripe/upgrade' : '/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan, billing, userId: user.id }),
@@ -125,8 +127,11 @@ export default function PricingPage() {
       const data = await res.json()
       if (data.url) {
         window.location.href = data.url
+      } else if (data.success) {
+        alert('Plan upgraded successfully!')
+        window.location.reload()
       } else {
-        alert(data.error || 'Checkout failed. Please try again.')
+        alert(data.error || 'Something went wrong. Please try again.')
         setLoading(null)
       }
     } catch (err) {
