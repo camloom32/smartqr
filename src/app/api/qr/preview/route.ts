@@ -197,11 +197,7 @@ async function applyFrame(
       const bannerHeight = 70
       const totalHeight = size + bannerHeight
 
-      const textSvg = `<svg width="${size}" height="${bannerHeight}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="${size}" height="${bannerHeight}" fill="white"/>
-        <text x="${size / 2}" y="${bannerHeight / 2 + 8}" text-anchor="middle" font-family="DejaVu Sans, Liberation Sans, sans-serif" font-size="24" font-weight="bold" fill="${fg}">${escapeXml(caption)}</text>
-      </svg>`
-      const textBuffer = await sharp(Buffer.from(textSvg)).png().toBuffer()
+      const textBuffer = await renderText(caption, size, 24, fg)
 
       const canvas = await sharp({
         create: { width: size, height: totalHeight, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
@@ -218,18 +214,9 @@ async function applyFrame(
       const bannerHeight = 50
       const totalHeight = size + bannerHeight * 2
 
-      const topSvg = `<svg width="${size}" height="${bannerHeight}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="${size}" height="${bannerHeight}" fill="white"/>
-        <text x="${size / 2}" y="${bannerHeight / 2 + 8}" text-anchor="middle" font-family="DejaVu Sans, Liberation Sans, sans-serif" font-size="22" font-weight="bold" fill="${fg}">${escapeXml(subcaption)}</text>
-      </svg>`
-      const bottomSvg = `<svg width="${size}" height="${bannerHeight}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="${size}" height="${bannerHeight}" fill="white"/>
-        <text x="${size / 2}" y="${bannerHeight / 2 + 8}" text-anchor="middle" font-family="DejaVu Sans, Liberation Sans, sans-serif" font-size="24" font-weight="bold" fill="${fg}">${escapeXml(caption)}</text>
-      </svg>`
-
       const [topBuffer, bottomBuffer] = await Promise.all([
-        sharp(Buffer.from(topSvg)).png().toBuffer(),
-        sharp(Buffer.from(bottomSvg)).png().toBuffer(),
+        renderText(subcaption, size, 22, fg),
+        renderText(caption, size, 24, fg),
       ])
 
       const canvas = await sharp({
@@ -249,7 +236,7 @@ async function applyFrame(
 
       const badgeSvg = `<svg width="${badgeSize}" height="${badgeSize}" xmlns="http://www.w3.org/2000/svg">
         <circle cx="${badgeSize / 2}" cy="${badgeSize / 2}" r="${badgeSize / 2}" fill="#2563eb"/>
-        <text x="${badgeSize / 2}" y="${badgeSize / 2 + 10}" text-anchor="middle" font-family="DejaVu Sans, Liberation Sans, sans-serif" font-size="36" font-weight="bold" fill="white">SCAN</text>
+        <text x="${badgeSize / 2}" y="${badgeSize / 2 + 10}" text-anchor="middle" font-family="sans-serif" font-size="36" font-weight="bold" fill="white">SCAN</text>
       </svg>`
       const badgeBuffer = await sharp(Buffer.from(badgeSvg)).png().toBuffer()
 
@@ -270,4 +257,13 @@ async function applyFrame(
 
 function escapeXml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')
+}
+
+async function renderText(text: string, width: number, fontSize: number, fontColor: string, bgColor = 'white'): Promise<Buffer> {
+  const height = Math.round(fontSize * 2)
+  const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <rect width="${width}" height="${height}" fill="${bgColor}"/>
+    <text x="${width / 2}" y="${height / 2 + fontSize / 3}" text-anchor="middle" font-family="sans-serif" font-size="${fontSize}" font-weight="bold" fill="${fontColor}">${escapeXml(text)}</text>
+  </svg>`
+  return sharp(Buffer.from(svg)).png().toBuffer()
 }
