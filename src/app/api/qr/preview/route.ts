@@ -3,15 +3,24 @@ import { QRCodeStyling, DotType } from '@liquid-js/qr-code-styling'
 import sharp from 'sharp'
 import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
-import { createCanvas, loadFont, GlobalFonts } from '@napi-rs/canvas'
 
 const DOT_TYPE_STRINGS: string[] = Object.values(DotType)
 
+let canvasModule: typeof import('@napi-rs/canvas') | null = null
 let FONT_LOADED = false
 
-function loadFontSync(): void {
+async function getCanvas(): Promise<typeof import('@napi-rs/canvas')> {
+  if (!canvasModule) {
+    canvasModule = await import('@napi-rs/canvas')
+  }
+  return canvasModule
+}
+
+async function loadFontSync(): Promise<void> {
   if (FONT_LOADED) return
   FONT_LOADED = true
+
+  const { GlobalFonts } = await getCanvas()
 
   const fontPaths = [
     join(process.cwd(), 'public', 'fonts', 'Roboto-Bold.ttf'),
@@ -28,8 +37,10 @@ function loadFontSync(): void {
   }
 }
 
-function renderTextWithCanvas(text: string, width: number, fontSize: number, fontColor: string, bgColor = '#ffffff'): Buffer {
-  loadFontSync()
+async function renderTextWithCanvas(text: string, width: number, fontSize: number, fontColor: string, bgColor = '#ffffff'): Promise<Buffer> {
+  await loadFontSync()
+
+  const { createCanvas } = await getCanvas()
 
   const height = Math.round(fontSize * 2)
   const canvas = createCanvas(width, height)
@@ -240,7 +251,7 @@ async function applyFrame(
       const bannerHeight = 70
       const totalHeight = size + bannerHeight
 
-      const textBuffer = renderTextWithCanvas(caption, size, 24, fg)
+      const textBuffer = await renderTextWithCanvas(caption, size, 24, fg)
 
       const resultCanvas = await sharp({
         create: { width: size, height: totalHeight, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
@@ -257,8 +268,10 @@ async function applyFrame(
       const bannerHeight = 50
       const totalHeight = size + bannerHeight * 2
 
-      const topBuffer = renderTextWithCanvas(subcaption, size, 22, fg)
-      const bottomBuffer = renderTextWithCanvas(caption, size, 24, fg)
+      const [topBuffer, bottomBuffer] = await Promise.all([
+        renderTextWithCanvas(subcaption, size, 22, fg),
+        renderTextWithCanvas(caption, size, 24, fg),
+      ])
 
       const resultCanvas = await sharp({
         create: { width: size, height: totalHeight, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
@@ -275,7 +288,7 @@ async function applyFrame(
       const badgeSize = 90
       const margin = 12
 
-      const badgeTextBuffer = renderTextWithCanvas('SCAN', badgeSize, 28, '#ffffff', '#2563eb')
+      const badgeTextBuffer = await renderTextWithCanvas('SCAN', badgeSize, 28, '#ffffff', '#2563eb')
 
       const badgeSvg = `<svg width="${badgeSize}" height="${badgeSize}" xmlns="http://www.w3.org/2000/svg">
         <circle cx="${badgeSize / 2}" cy="${badgeSize / 2}" r="${badgeSize / 2}" fill="#2563eb"/>
