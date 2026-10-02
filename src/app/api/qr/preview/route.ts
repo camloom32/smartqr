@@ -199,7 +199,7 @@ async function applyFrame(
 
       const textSvg = `<svg width="${size}" height="${bannerHeight}" xmlns="http://www.w3.org/2000/svg">
         <rect width="${size}" height="${bannerHeight}" fill="white"/>
-        <text x="${size / 2}" y="${bannerHeight / 2 + 8}" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="${fg}">${escapeXml(caption)}</text>
+        <text x="${size / 2}" y="${bannerHeight / 2 + 8}" text-anchor="middle" font-family="DejaVu Sans, Liberation Sans, sans-serif" font-size="24" font-weight="bold" fill="${fg}">${escapeXml(caption)}</text>
       </svg>`
       const textBuffer = await sharp(Buffer.from(textSvg)).png().toBuffer()
 
@@ -220,11 +220,11 @@ async function applyFrame(
 
       const topSvg = `<svg width="${size}" height="${bannerHeight}" xmlns="http://www.w3.org/2000/svg">
         <rect width="${size}" height="${bannerHeight}" fill="white"/>
-        <text x="${size / 2}" y="${bannerHeight / 2 + 8}" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="${fg}">${escapeXml(subcaption)}</text>
+        <text x="${size / 2}" y="${bannerHeight / 2 + 8}" text-anchor="middle" font-family="DejaVu Sans, Liberation Sans, sans-serif" font-size="22" font-weight="bold" fill="${fg}">${escapeXml(subcaption)}</text>
       </svg>`
       const bottomSvg = `<svg width="${size}" height="${bannerHeight}" xmlns="http://www.w3.org/2000/svg">
         <rect width="${size}" height="${bannerHeight}" fill="white"/>
-        <text x="${size / 2}" y="${bannerHeight / 2 + 8}" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="${fg}">${escapeXml(caption)}</text>
+        <text x="${size / 2}" y="${bannerHeight / 2 + 8}" text-anchor="middle" font-family="DejaVu Sans, Liberation Sans, sans-serif" font-size="24" font-weight="bold" fill="${fg}">${escapeXml(caption)}</text>
       </svg>`
 
       const [topBuffer, bottomBuffer] = await Promise.all([
@@ -249,7 +249,7 @@ async function applyFrame(
 
       const badgeSvg = `<svg width="${badgeSize}" height="${badgeSize}" xmlns="http://www.w3.org/2000/svg">
         <circle cx="${badgeSize / 2}" cy="${badgeSize / 2}" r="${badgeSize / 2}" fill="#2563eb"/>
-        <text x="${badgeSize / 2}" y="${badgeSize / 2 + 10}" text-anchor="middle" font-family="Arial" font-size="36" font-weight="bold" fill="white">SCAN</text>
+        <text x="${badgeSize / 2}" y="${badgeSize / 2 + 10}" text-anchor="middle" font-family="DejaVu Sans, Liberation Sans, sans-serif" font-size="36" font-weight="bold" fill="white">SCAN</text>
       </svg>`
       const badgeBuffer = await sharp(Buffer.from(badgeSvg)).png().toBuffer()
 
