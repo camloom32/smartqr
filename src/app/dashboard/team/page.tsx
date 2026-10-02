@@ -213,8 +213,8 @@ export default function TeamPage() {
         {inviteError && <p className="text-sm text-red-600 mt-2">{inviteError}</p>}
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <table className="w-full">
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-x-auto">
+        <table className="w-full min-w-[600px]">
           <thead>
             <tr className="border-b border-gray-100">
               <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900">Member</th>

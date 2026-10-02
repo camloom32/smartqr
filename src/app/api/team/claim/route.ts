@@ -26,10 +26,18 @@ export async function GET(req: NextRequest) {
   const payload = verifyToken(token)
   if (!payload) return NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 })
 
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+  const { data: owner } = await supabase
+    .from('profiles')
+    .select('email')
+    .eq('id', payload.ownerId)
+    .single()
+
   return NextResponse.json({
     teamMemberId: payload.teamMemberId,
     ownerId: payload.ownerId,
     memberEmail: payload.memberEmail,
+    ownerEmail: owner?.email || null,
   })
 }
 

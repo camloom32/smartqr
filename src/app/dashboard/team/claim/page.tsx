@@ -16,6 +16,8 @@ function ClaimInviteContent() {
   const token = searchParams.get('token')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [claimed, setClaimed] = useState(false)
+  const [ownerEmail, setOwnerEmail] = useState('')
 
   useEffect(() => {
     async function claimInvite() {
@@ -28,11 +30,11 @@ function ClaimInviteContent() {
       const { data: { session } } = await supabase.auth.getSession()
 
       if (!session) {
-        router.push(`/login?redirect=/dashboard/team/claim?token=${token}`)
+        router.push(`/login?redirect=/dashboard/team/claim?token=${encodeURIComponent(token)}`)
         return
       }
 
-      const res = await fetch(`/api/team/claim?token=${token}`)
+      const res = await fetch(`/api/team/claim?token=${encodeURIComponent(token)}`)
       const data = await res.json()
 
       if (!res.ok || !data.teamMemberId) {
@@ -47,6 +49,8 @@ function ClaimInviteContent() {
         return
       }
 
+      setOwnerEmail(data.ownerEmail || '')
+
       const claimRes = await fetch('/api/team/claim', {
         method: 'POST',
         headers: {
@@ -57,12 +61,12 @@ function ClaimInviteContent() {
       })
 
       if (claimRes.ok) {
-        router.push('/dashboard?claimed=true')
+        setClaimed(true)
       } else {
         const claimData = await claimRes.json()
         setError(claimData.error || 'Failed to accept invite')
-        setLoading(false)
       }
+      setLoading(false)
     }
 
     claimInvite()
@@ -76,9 +80,30 @@ function ClaimInviteContent() {
     )
   }
 
+  if (claimed) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-sm text-center">
+          <div className="mb-4">
+            <svg className="w-16 h-16 mx-auto text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">You&apos;re in!</h2>
+          <p className="text-gray-500 mb-6">
+            You&apos;ve joined {ownerEmail ? `the team of ${ownerEmail}` : 'the team'}. You now have access to view and manage the team&apos;s QR codes.
+          </p>
+          <Link href="/dashboard" className="block w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition">
+            Go to Dashboard
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-sm text-center">
           <div className="mb-4">
             <svg className="w-16 h-16 mx-auto text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -87,7 +112,7 @@ function ClaimInviteContent() {
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Invite Error</h2>
           <p className="text-gray-500 mb-6">{error}</p>
-          <Link href="/dashboard" className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition">
+          <Link href="/dashboard" className="block w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition">
             Go to Dashboard
           </Link>
         </div>
