@@ -10,20 +10,34 @@ function SignupForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const plan = searchParams.get('plan')
+  const billing = searchParams.get('billing') || 'monthly'
 
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [showCheckout, setShowCheckout] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
+    }
+
     setLoading(true)
 
-    const { error } = await supabase.auth.signUp({
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -32,8 +46,16 @@ function SignupForm() {
       },
     })
 
-    if (error) {
-      setError(error.message)
+    if (signUpError) {
+      setError(signUpError.message)
+      setLoading(false)
+      return
+    }
+
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (session && plan && (plan === 'starter' || plan === 'growth')) {
+      setShowCheckout(true)
       setLoading(false)
     } else {
       router.push('/dashboard')
@@ -43,16 +65,68 @@ function SignupForm() {
   const handleGoogleSignUp = async () => {
     setError('')
     setGoogleLoading(true)
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?plan=${plan || ''}&billing=${billing}`,
       },
     })
-    if (error) {
-      setError(error.message)
+    if (oauthError) {
+      setError(oauthError.message)
       setGoogleLoading(false)
     }
+  }
+
+  const handleCheckout = async () => {
+    setLoading(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/login')
+        return
+      }
+
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, billing, userId: user.id }),
+      })
+
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert(data.error || 'Checkout failed. Please try again.')
+        setLoading(false)
+      }
+    } catch {
+      alert('Checkout failed. Please try again.')
+      setLoading(false)
+    }
+  }
+
+  if (showCheckout) {
+    return (
+      <div className="w-full max-w-sm">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
+          <div className="mb-4">
+            <svg className="w-16 h-16 mx-auto text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Account created!</h2>
+          <p className="text-gray-500 mb-6">You're all set. Ready to start your subscription?</p>
+          <button
+            onClick={handleCheckout}
+            disabled={loading}
+            className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition disabled:opacity-50"
+          >
+            {loading ? 'Redirecting...' : 'Continue to payment'}
+          </button>
+          <p className="mt-3 text-sm text-gray-500">14-day free trial included</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -127,6 +201,20 @@ function SignupForm() {
               required
               minLength={8}
               className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="Min. 8 characters"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm password</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={8}
+              className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="Type password again"
             />
           </div>
 

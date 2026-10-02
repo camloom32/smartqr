@@ -42,7 +42,7 @@ export default function DashboardLayout({
         setBillingLoading(false)
       }
     } catch (err) {
-      console.error('Portal error:', err)
+      alert('Could not open billing portal. Please contact support.')
       setBillingLoading(false)
     }
   }
