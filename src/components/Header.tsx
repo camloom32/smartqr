@@ -37,6 +37,10 @@ export default function Header() {
   }, [])
 
   useEffect(() => {
+    if (tier) localStorage.setItem('smartqr_tier', tier)
+  }, [tier])
+
+  useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false)

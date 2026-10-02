@@ -86,14 +86,14 @@ export default function CreateQRPage() {
   const logoInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    async function checkTier() {
-      try {
-        const res = await fetch('/api/user/tier')
-        const data = await res.json()
-        if (data.tier) setTier(data.tier as 'free' | 'starter' | 'growth')
-      } catch { /* ignore */ }
+    function handleTierUpdate() {
+      const tier = localStorage.getItem('smartqr_tier')
+      if (tier) setTier(tier as 'free' | 'starter' | 'growth')
     }
-    checkTier()
+
+    handleTierUpdate()
+    window.addEventListener('smartqr_tier', handleTierUpdate)
+    return () => window.removeEventListener('smartqr_tier', handleTierUpdate)
   }, [])
 
   useEffect(() => {

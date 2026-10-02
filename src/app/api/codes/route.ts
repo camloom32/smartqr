@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     .from('subscriptions')
     .select('tier, status')
     .eq('user_id', user.id)
-    .eq('status', 'active')
+    .in('status', ['active', 'trialing'])
     .single()
 
   const tier = subscription?.tier || 'free'
