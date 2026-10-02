@@ -86,6 +86,11 @@ export default function CreateQRPage() {
   const logoInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    const stored = localStorage.getItem('smartqr_tier') as 'free' | 'starter' | 'growth' | null
+    if (stored) setTier(stored)
+  }, [])
+
+  useEffect(() => {
     async function checkTier() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
@@ -98,9 +103,9 @@ export default function CreateQRPage() {
           .in('status', ['active', 'trialing'])
           .maybeSingle()
 
-        const detectedTier = sub?.tier || 'free'
+        const detectedTier = (sub?.tier || 'free') as 'free' | 'starter' | 'growth'
         console.log('[create] tier check:', detectedTier, sub)
-        setTier(detectedTier as 'free' | 'starter' | 'growth')
+        setTier(detectedTier)
         localStorage.setItem('smartqr_tier', detectedTier)
       } catch (e) {
         console.error('[create] tier error:', e)

@@ -22,6 +22,11 @@ export default function NewCodePage() {
   const [codeCount, setCodeCount] = useState(0)
 
   useEffect(() => {
+    const stored = localStorage.getItem('smartqr_tier') as 'free' | 'starter' | 'growth' | null
+    if (stored) setPlan(stored)
+  }, [])
+
+  useEffect(() => {
     const fetchData = async () => {
       const supabaseClient = supabase
       const { data: { user } } = await supabaseClient.auth.getUser()

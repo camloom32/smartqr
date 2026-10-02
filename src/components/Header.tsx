@@ -173,12 +173,22 @@ export default function Header() {
                     Create QR Code
                   </Link>
                   <div className="border-t border-gray-100 my-1" />
-                  <Link
-                    href="/api/stripe/portal"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  <button
+                    onClick={async () => {
+                      const { data: { user } } = await supabase.auth.getUser()
+                      if (!user) return
+                      const res = await fetch('/api/stripe/portal', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: user.id }),
+                      })
+                      const data = await res.json()
+                      if (data.url) window.location.href = data.url
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   >
                     Manage Billing
-                  </Link>
+                  </button>
                   <button
                     onClick={async () => {
                       await supabase.auth.signOut()
