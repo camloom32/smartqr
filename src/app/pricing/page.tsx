@@ -224,7 +224,7 @@ export default function PricingPage() {
                           </span>
                         </div>
                         <span className="text-gray-500 text-sm">/year first year</span>
-                        <p className="text-xs text-green-600 mt-1 font-medium">50% off — then ${tier.priceYearly}/yr</p>
+                        <p className="text-xs text-green-600 mt-1 font-medium">50% off — then {tier.priceYearly}/yr after year 1</p>
                       </div>
                     ) : (
                       <div>
