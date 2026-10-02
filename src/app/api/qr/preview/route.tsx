@@ -293,7 +293,7 @@ async function applyFrame(
     case 'caption-top-bottom': {
       if (!caption || !subcaption) return pngBase64
       const bannerHeight = 50
-      const qrSize = size - bannerHeight
+      const qrSize = size - bannerHeight * 2
       const totalHeight = qrSize + bannerHeight * 2
 
       try {
