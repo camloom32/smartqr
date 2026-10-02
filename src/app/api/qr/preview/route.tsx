@@ -196,7 +196,16 @@ async function applyFrame(
   subcaption?: string,
   size = 400,
 ): Promise<string> {
-  const qrBuffer = Buffer.from(pngBase64, 'base64')
+  let qrBuffer = Buffer.from(pngBase64, 'base64')
+  const meta = await sharp(qrBuffer).metadata()
+  const actualWidth = meta.width || size
+  const actualHeight = meta.height || size
+
+  if (actualWidth !== actualHeight) {
+    qrBuffer = await sharp(qrBuffer)
+      .resize(size, size, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+      .toBuffer()
+  }
 
   switch (frame) {
     case 'border': {
@@ -254,7 +263,7 @@ async function applyFrame(
             <img
               width={size}
               height={size}
-              src={`data:image/png;base64,${pngBase64}`}
+              src={`data:image/png;base64,${qrBuffer.toString('base64')}`}
             />
             <div
               style={{
@@ -276,7 +285,7 @@ async function applyFrame(
         )
         return Buffer.from(await frameResponse.arrayBuffer()).toString('base64')
       } catch {
-        return pngBase64
+        return qrBuffer.toString('base64')
       }
     }
 
@@ -314,7 +323,7 @@ async function applyFrame(
             <img
               width={size}
               height={size}
-              src={`data:image/png;base64,${pngBase64}`}
+              src={`data:image/png;base64,${qrBuffer.toString('base64')}`}
             />
             <div
               style={{
@@ -336,7 +345,7 @@ async function applyFrame(
         )
         return Buffer.from(await frameResponse.arrayBuffer()).toString('base64')
       } catch {
-        return pngBase64
+        return qrBuffer.toString('base64')
       }
     }
 
