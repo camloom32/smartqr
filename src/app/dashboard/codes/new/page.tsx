@@ -29,7 +29,7 @@ export default function NewCodePage() {
 
       const [codesResult, subResult] = await Promise.all([
         supabaseClient.from('dynamic_codes').select('id', { count: 'exact' }).eq('user_id', user.id).eq('is_active', true),
-        supabaseClient.from('subscriptions').select('tier, status').eq('user_id', user.id).eq('status', 'active').single(),
+        supabaseClient.from('subscriptions').select('tier, status').eq('user_id', user.id).in('status', ['active', 'trialing']).single(),
       ])
 
       const sub = subResult.data as Subscription | null

@@ -18,14 +18,31 @@ type Frame = {
   tier: 'free' | 'starter'
 }
 
+type QRStyleOption = {
+  id: string
+  name: string
+  description: string
+  tier: 'free' | 'starter'
+}
+
 const FRAMES: Frame[] = [
-  { id: 'none', name: 'Plain', description: 'Simple QR code, no frame', tier: 'free' },
+  { id: 'none', name: 'Plain', description: 'No frame', tier: 'free' },
   { id: 'border', name: 'Border', description: 'Clean border around QR', tier: 'starter' },
   { id: 'rounded', name: 'Rounded', description: 'Rounded corners, modern look', tier: 'starter' },
   { id: 'caption-bottom', name: 'Caption Below', description: 'Text banner under QR', tier: 'starter' },
   { id: 'caption-top-bottom', name: 'Top & Bottom', description: 'Text above and below QR', tier: 'starter' },
   { id: 'badge-corner', name: 'Scan Badge', description: 'Corner badge overlay', tier: 'starter' },
 ]
+
+const QR_STYLES: QRStyleOption[] = [
+  { id: 'square', name: 'Square', description: 'Classic square modules', tier: 'free' },
+  { id: 'dot', name: 'Dots', description: 'Circular dot modules', tier: 'starter' },
+  { id: 'rounded', name: 'Rounded', description: 'Soft rounded modules', tier: 'starter' },
+  { id: 'classy', name: 'Classy', description: 'Elegant rounded squares', tier: 'starter' },
+  { id: 'classy-rounded', name: 'Extra Rounded', description: 'Fully rounded modules', tier: 'starter' },
+]
+
+
 
 function getContrastRatio(hex1: string, hex2: string): number {
   const parse = (hex: string) => {
@@ -64,6 +81,7 @@ export default function CreateQRPage() {
   const [logoPreview, setLogoPreview] = useState<string>('')
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [upgradeTarget, setUpgradeTarget] = useState('')
+  const [qrStyle, setQrStyle] = useState('square')
 
   const logoInputRef = useRef<HTMLInputElement>(null)
 
@@ -90,7 +108,7 @@ export default function CreateQRPage() {
     const timer = setTimeout(async () => {
       setLoading(true)
       try {
-        const body: Record<string, string> = { url, fg: fgColor, bg: bgColor }
+        const body: Record<string, string> = { url, fg: fgColor, bg: bgColor, style: qrStyle }
         if (frame !== 'none') body.frame = frame
         if (caption) body.caption = caption
         if (subcaption) body.subcaption = subcaption
@@ -109,7 +127,7 @@ export default function CreateQRPage() {
     }, 400)
 
     return () => clearTimeout(timer)
-  }, [url, fgColor, bgColor, frame, caption, subcaption, logoPreview])
+  }, [url, fgColor, bgColor, frame, caption, subcaption, logoPreview, qrStyle])
 
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -132,6 +150,15 @@ export default function CreateQRPage() {
       return
     }
     setFrame(frameId)
+  }
+
+  function handleStyleSelect(styleId: string) {
+    if (styleId !== 'square' && tier === 'free') {
+      setUpgradeTarget(styleId)
+      setShowUpgradeModal(true)
+      return
+    }
+    setQrStyle(styleId)
   }
 
   const contrast = getContrastRatio(fgColor, bgColor)
@@ -231,6 +258,39 @@ export default function CreateQRPage() {
                     style={{ width: `${scanScore.score}%` }}
                   />
                 </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-2xl p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold">Module Style</h2>
+                {tier === 'free' && (
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+                    Starter+
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                {QR_STYLES.map((s) => {
+                  const locked = s.tier === 'starter' && tier === 'free'
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => handleStyleSelect(s.id)}
+                      className={`p-3 rounded-xl border-2 text-left transition ${
+                        qrStyle === s.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : locked
+                          ? 'border-gray-100 bg-gray-50 opacity-60'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <p className="text-sm font-semibold text-gray-900">{s.name}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{s.description}</p>
+                      {locked && <p className="text-xs text-blue-600 mt-1 font-medium">🔒</p>}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 

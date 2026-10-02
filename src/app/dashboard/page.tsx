@@ -36,7 +36,7 @@ export default function DashboardPage() {
 
       const [codesResult, subResult, teamResult] = await Promise.all([
         supabase.from('dynamic_codes').select('id, short_code, destination_url, title, is_active, created_at, user_id').eq('user_id', session.user.id).eq('is_active', true).order('created_at', { ascending: false }),
-        supabase.from('subscriptions').select('tier, status').eq('user_id', session.user.id).eq('status', 'active').maybeSingle(),
+        supabase.from('subscriptions').select('tier, status').eq('user_id', session.user.id).in('status', ['active', 'trialing']).maybeSingle(),
         supabase.from('team_members').select('owner_id, accepted_at').eq('member_email', session.user.email?.toLowerCase()).not('accepted_at', 'is', null).maybeSingle(),
       ])
 
