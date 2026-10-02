@@ -216,21 +216,19 @@ async function applyFrame(
 
     case 'rounded': {
       const roundedRadius = 40
+      const borderWidth = 15
 
-      const qrFlat = await sharp(qrBuffer)
-        .flatten({ background: { r: 255, g: 255, b: 255, alpha: 0 } })
-        .png()
+      const resized = await sharp(qrBuffer)
+        .resize(size - borderWidth * 2, size - borderWidth * 2, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
         .toBuffer()
 
-      const roundedMaskSvg = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="${size}" height="${size}" rx="${roundedRadius}" ry="${roundedRadius}" fill="${bg}"/>
+      const roundedBgSvg = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+        <rect width="${size}" height="${size}" rx="${roundedRadius}" ry="${roundedRadius}" fill="${fg}"/>
       </svg>`
-      const roundedMaskBuffer = await sharp(Buffer.from(roundedMaskSvg)).png().toBuffer()
+      const roundedBgBuffer = await sharp(Buffer.from(roundedBgSvg)).png().toBuffer()
 
-      const rounded = await sharp(roundedMaskBuffer)
-        .composite([
-          { input: qrFlat, blend: 'over' },
-        ])
+      const rounded = await sharp(roundedBgBuffer)
+        .composite([{ input: resized, blend: 'over', top: borderWidth, left: borderWidth }])
         .png()
         .toBuffer()
 
