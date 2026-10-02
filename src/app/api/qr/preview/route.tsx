@@ -237,48 +237,107 @@ async function applyFrame(
 
     case 'caption-bottom': {
       if (!caption) return pngBase64
-      const bannerHeight = 100
+      const bannerHeight = 80
       const totalHeight = size + bannerHeight
 
-      const qrSized = await sharp(qrBuffer).resize(size, size, { fit: 'fill' }).toBuffer()
-      const textBuffer = await sharp(await renderTextBanner(caption, size, bannerHeight, 32, fg))
-        .resize(size, bannerHeight)
-        .toBuffer()
-
-      const resultCanvas = await sharp({
-        create: { width: size, height: totalHeight, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
-      }).composite([
-        { input: qrSized, blend: 'over', top: 0, left: 0 },
-        { input: textBuffer, blend: 'over', top: size, left: 0 },
-      ]).png().toBuffer()
-
-      return resultCanvas.toString('base64')
+      try {
+        const frameResponse = await new ImageResponse(
+          <div
+            style={{
+              width: size,
+              height: totalHeight,
+              display: 'flex',
+              flexDirection: 'column',
+              backgroundColor: 'white',
+            }}
+          >
+            <img
+              width={size}
+              height={size}
+              src={`data:image/png;base64,${pngBase64}`}
+            />
+            <div
+              style={{
+                height: bannerHeight,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: fg,
+                fontSize: 28,
+                fontWeight: 700,
+                fontFamily: 'Arial',
+                backgroundColor: 'white',
+              }}
+            >
+              {caption}
+            </div>
+          </div>,
+          { width: size, height: totalHeight },
+        )
+        return Buffer.from(await frameResponse.arrayBuffer()).toString('base64')
+      } catch {
+        return pngBase64
+      }
     }
 
     case 'caption-top-bottom': {
       if (!caption || !subcaption) return pngBase64
-      const bannerHeight = 70
+      const bannerHeight = 60
       const totalHeight = size + bannerHeight * 2
 
-      const qrSized = await sharp(qrBuffer).resize(size, size, { fit: 'fill' }).toBuffer()
-      const [topRaw, bottomRaw] = await Promise.all([
-        renderTextBanner(subcaption, size, bannerHeight, 30, fg),
-        renderTextBanner(caption, size, bannerHeight, 30, fg),
-      ])
-      const [topBuffer, bottomBuffer] = await Promise.all([
-        sharp(topRaw).resize(size, bannerHeight).toBuffer(),
-        sharp(bottomRaw).resize(size, bannerHeight).toBuffer(),
-      ])
-
-      const resultCanvas = await sharp({
-        create: { width: size, height: totalHeight, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
-      }).composite([
-        { input: topBuffer, blend: 'over', top: 0, left: 0 },
-        { input: qrSized, blend: 'over', top: bannerHeight, left: 0 },
-        { input: bottomBuffer, blend: 'over', top: size + bannerHeight, left: 0 },
-      ]).png().toBuffer()
-
-      return resultCanvas.toString('base64')
+      try {
+        const frameResponse = await new ImageResponse(
+          <div
+            style={{
+              width: size,
+              height: totalHeight,
+              display: 'flex',
+              flexDirection: 'column',
+              backgroundColor: 'white',
+            }}
+          >
+            <div
+              style={{
+                height: bannerHeight,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: fg,
+                fontSize: 26,
+                fontWeight: 700,
+                fontFamily: 'Arial',
+                backgroundColor: 'white',
+              }}
+            >
+              {subcaption}
+            </div>
+            <img
+              width={size}
+              height={size}
+              src={`data:image/png;base64,${pngBase64}`}
+            />
+            <div
+              style={{
+                height: bannerHeight,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: fg,
+                fontSize: 26,
+                fontWeight: 700,
+                fontFamily: 'Arial',
+                backgroundColor: 'white',
+              }}
+            >
+              {caption}
+            </div>
+          </div>,
+          { width: size, height: totalHeight },
+        )
+        return Buffer.from(await frameResponse.arrayBuffer()).toString('base64')
+      } catch {
+        return pngBase64
+      }
     }
 
     case 'badge-corner': {
