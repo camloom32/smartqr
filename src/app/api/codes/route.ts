@@ -33,16 +33,18 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { title, destinationUrl, style } = body
+  const { title, destinationUrl, style, ownerId } = body
 
   if (!destinationUrl) {
     return NextResponse.json({ error: 'Destination URL required' }, { status: 400 })
   }
 
+  const effectiveUserId = ownerId || user.id
+
   const { data: subscription } = await supabase
     .from('subscriptions')
     .select('tier, status')
-    .eq('user_id', user.id)
+    .eq('user_id', effectiveUserId)
     .in('status', ['active', 'trialing'])
     .single()
 
@@ -51,7 +53,7 @@ export async function POST(req: NextRequest) {
   const { count } = await supabase
     .from('dynamic_codes')
     .select('id', { count: 'exact' })
-    .eq('user_id', user.id)
+    .eq('user_id', effectiveUserId)
     .eq('is_active', true)
 
   const maxCodes = tier === 'free' ? 1 : tier === 'starter' ? 5 : 25
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabase
     .from('dynamic_codes')
     .insert({
-      user_id: user.id,
+      user_id: effectiveUserId,
       short_code: shortCode,
       destination_url: destinationUrl,
       title: title || null,

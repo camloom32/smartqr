@@ -69,6 +69,8 @@ export default function NewCodePage() {
   const [subcaption, setSubcaption] = useState('')
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [upgradeTarget, setUpgradeTarget] = useState('')
+  const [teamOwnerId, setTeamOwnerId] = useState<string | null>(null)
+  const [isTeamMember, setIsTeamMember] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -82,15 +84,34 @@ export default function NewCodePage() {
       const { data: { user } } = await supabaseClient.auth.getUser()
       if (!user) return
 
-      const [codesResult, subResult] = await Promise.all([
+      const [membershipRes, codesResult, subResult] = await Promise.all([
+        fetch('/api/team/membership', { headers: { 'x-user-id': user.id } }),
         supabaseClient.from('dynamic_codes').select('id', { count: 'exact' }).eq('user_id', user.id).eq('is_active', true),
         supabaseClient.from('subscriptions').select('tier, status').eq('user_id', user.id).in('status', ['active', 'trialing']).single(),
       ])
 
-      const sub = subResult.data as Subscription | null
-      const count = codesResult.count || 0
+      const membershipData = await membershipRes.json()
+      const isTeamMember = membershipData.isTeamMember
+      const ownerId = membershipData.ownerId
+      const teamTier = membershipData.teamTier
 
-      setPlan((sub?.tier as typeof plan) || 'free')
+      const sub = subResult.data as Subscription | null
+      let count = codesResult.count || 0
+      let effectiveTier = (sub?.tier as typeof plan) || 'free'
+
+      if (isTeamMember && ownerId) {
+        const { count: teamCount } = await supabaseClient
+          .from('dynamic_codes')
+          .select('id', { count: 'exact' })
+          .eq('user_id', ownerId)
+          .eq('is_active', true)
+        count = teamCount || 0
+        effectiveTier = teamTier || effectiveTier
+        setTeamOwnerId(ownerId)
+        setIsTeamMember(true)
+      }
+
+      setPlan(effectiveTier)
       setCodeCount(count)
     }
     fetchData()
@@ -201,7 +222,7 @@ export default function NewCodePage() {
           'Content-Type': 'application/json',
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify({ title, destinationUrl, style: { foregroundColor: fgColor, backgroundColor: bgColor, style: qrStyle, frame, caption, subcaption, logo: logoBase64 } }),
+        body: JSON.stringify({ title, destinationUrl, ownerId: teamOwnerId, style: { foregroundColor: fgColor, backgroundColor: bgColor, style: qrStyle, frame, caption, subcaption, logo: logoBase64 } }),
       })
       if (!res.ok) {
         const data = await res.json()
