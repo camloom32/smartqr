@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { QRCodeStyling, DotType } from '@liquid-js/qr-code-styling'
 import sharp from 'sharp'
+import { ImageResponse } from '@vercel/og'
 
 const DOT_TYPE_STRINGS: string[] = Object.values(DotType)
 
@@ -17,11 +18,33 @@ async function renderTextBanner(
   fontColor: string,
   bgColor = '#ffffff',
 ): Promise<Buffer> {
-  const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-    <rect width="${width}" height="${height}" fill="${bgColor}"/>
-    <text x="${width / 2}" y="${height / 2 + fontSize / 3}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="${fontColor}">${text}</text>
-  </svg>`
-  return sharp(Buffer.from(svg)).png().toBuffer()
+  try {
+    const response = new ImageResponse(
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          backgroundColor: bgColor,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: fontColor,
+          fontSize,
+          fontWeight: 700,
+          fontFamily: 'Arial, sans-serif',
+        }}
+      >
+        {text}
+      </div>,
+      { width, height },
+    )
+    return Buffer.from(await response.arrayBuffer())
+  } catch {
+    const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="${width}" height="${height}" fill="${bgColor}"/>
+    </svg>`
+    return sharp(Buffer.from(svg)).png().toBuffer()
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -194,13 +217,22 @@ async function applyFrame(
     case 'rounded': {
       const roundedRadius = 50
 
-      const maskSvg = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+      const roundedMaskSvg = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
         <rect width="${size}" height="${size}" rx="${roundedRadius}" ry="${roundedRadius}" fill="white"/>
       </svg>`
-      const whiteRounded = await sharp(Buffer.from(maskSvg)).png().toBuffer()
+      const roundedMaskBuffer = await sharp(Buffer.from(roundedMaskSvg)).png().toBuffer()
 
-      const masked = await sharp(whiteRounded)
-        .composite([{ input: qrBuffer, blend: 'over' }])
+      const flattenedQr = await sharp(qrBuffer)
+        .flatten({ background: { r: 255, g: 255, b: 255, alpha: 1 } })
+        .png()
+        .toBuffer()
+
+      const whiteBg = await sharp({
+        create: { width: size, height: size, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
+      }).composite([{ input: flattenedQr, blend: 'over' }]).png().toBuffer()
+
+      const masked = await sharp(whiteBg)
+        .composite([{ input: roundedMaskBuffer, blend: 'dest-in' }])
         .png()
         .toBuffer()
 
