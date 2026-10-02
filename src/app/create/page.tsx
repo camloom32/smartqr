@@ -87,17 +87,11 @@ export default function CreateQRPage() {
 
   useEffect(() => {
     async function checkTier() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data: sub } = await supabase
-        .from('subscriptions')
-        .select('tier, status')
-        .eq('user_id', user.id)
-        .in('status', ['active', 'trialing'])
-        .maybeSingle()
-
-      if (sub?.tier) setTier(sub.tier as 'free' | 'starter' | 'growth')
+      try {
+        const res = await fetch('/api/user/tier')
+        const data = await res.json()
+        if (data.tier) setTier(data.tier as 'free' | 'starter' | 'growth')
+      } catch { /* ignore */ }
     }
     checkTier()
   }, [])

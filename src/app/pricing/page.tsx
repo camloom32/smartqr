@@ -12,6 +12,17 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+const PRICE_IDS: Record<string, string> = {
+  'starter-monthly': 'price_1ULtLxI5JKZ67FIHMxv3nYoo',
+  'starter-yearly': 'price_1ULtubI5JKZ67FIHo9k0bJO3',
+  'growth-monthly': 'price_1ULtM7I5JKZ67FIHU21RVPOJ',
+  'growth-yearly': 'price_1ULtuhI5JKZ67FIHkbMcMT84',
+}
+
+const PRICE_TO_BILLING: Record<string, string> = Object.fromEntries(
+  Object.entries(PRICE_IDS).map(([k, v]) => [v, k.includes('yearly') ? 'yearly' : 'monthly'])
+)
+
 type Tier = {
   id: string
   name: string
@@ -89,6 +100,7 @@ export default function PricingPage() {
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly')
   const [currentTier, setCurrentTier] = useState<string | null>(null)
   const [currentStatus, setCurrentStatus] = useState<string | null>(null)
+  const [currentBilling, setCurrentBilling] = useState<'monthly' | 'yearly' | null>(null)
 
   useEffect(() => {
     async function checkSubscription() {
@@ -97,7 +109,7 @@ export default function PricingPage() {
 
       const { data: sub } = await supabase
         .from('subscriptions')
-        .select('tier, status')
+        .select('tier, status, stripe_price_id')
         .eq('user_id', user.id)
         .in('status', ['active', 'trialing', 'past_due'])
         .maybeSingle()
@@ -105,6 +117,10 @@ export default function PricingPage() {
       if (sub) {
         setCurrentTier(sub.tier)
         setCurrentStatus(sub.status)
+        if (sub.stripe_price_id) {
+          const billingPeriod = PRICE_TO_BILLING[sub.stripe_price_id]
+          if (billingPeriod) setCurrentBilling(billingPeriod as 'monthly' | 'yearly')
+        }
       }
     }
     checkSubscription()
@@ -146,6 +162,10 @@ export default function PricingPage() {
   function getButtonCta(tier: Tier) {
     if (tier.id === 'free') return { text: 'Create QR codes', href: '/create', disabled: false }
     if (currentTier === tier.id && (currentStatus === 'active' || currentStatus === 'trialing')) {
+      if (currentBilling && currentBilling !== billing) {
+        const switchText = billing === 'yearly' ? 'Switch to yearly' : 'Switch to monthly'
+        return { text: switchText, href: '#', disabled: false, checkout: tier.checkout, switchBilling: true }
+      }
       return { text: 'Current Plan', href: '/dashboard', disabled: true }
     }
     if (currentTier === 'growth' && tier.id === 'starter') {

@@ -119,7 +119,26 @@ async function compositeLogo(qrBase64: string, logoDataUrl: string, size: number
   const x = Math.round((qrActualSize - logoWidth) / 2)
   const y = Math.round((qrActualSize - logoHeight) / 2)
 
-  const withLogo = await sharp(qrBuffer)
+  const padding = 12
+  const bgWidth = logoWidth + padding * 2
+  const bgHeight = logoHeight + padding * 2
+  const bgX = x - padding
+  const bgY = y - padding
+
+  const whiteBg = await sharp({
+    create: { width: bgWidth, height: bgHeight, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
+  }).png().toBuffer()
+
+  const withBg = await sharp(qrBuffer)
+    .composite([{
+      input: whiteBg,
+      top: bgY,
+      left: bgX,
+    }])
+    .png()
+    .toBuffer()
+
+  const withLogo = await sharp(withBg)
     .composite([{
       input: resizedLogo,
       top: y,
