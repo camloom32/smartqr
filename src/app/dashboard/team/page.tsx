@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -13,6 +12,7 @@ const supabase = createClient(
 
 type TeamMember = {
   id: string
+  owner_id: string
   member_email: string
   member_name: string | null
   role: string
@@ -28,7 +28,10 @@ export default function TeamPage() {
   const [inviteName, setInviteName] = useState('')
   const [inviteLoading, setInviteLoading] = useState(false)
   const [inviteError, setInviteError] = useState('')
+  const [inviteUrl, setInviteUrl] = useState('')
   const [userEmail, setUserEmail] = useState('')
+  const [maxSeats] = useState(3)
+  const [isGrowth, setIsGrowth] = useState(false)
 
   useEffect(() => {
     async function checkAuth() {
@@ -38,15 +41,29 @@ export default function TeamPage() {
         return
       }
       setUserEmail(session.user.email || '')
+
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('tier')
+        .eq('user_id', session.user.id)
+        .in('status', ['active', 'trialing'])
+        .maybeSingle()
+
+      if (sub?.tier !== 'growth') {
+        router.push('/dashboard')
+        return
+      }
+      setIsGrowth(true)
+
       await fetchMembers(session.user.id)
       setLoading(false)
     }
     checkAuth()
   }, [])
 
-  async function fetchMembers(userId: string) {
-    const res = await fetch(`/api/team/members`, {
-      headers: { 'x-user-id': userId },
+  async function fetchMembers(ownerId: string) {
+    const res = await fetch(`/api/team/members?owner_id=${ownerId}`, {
+      headers: { 'x-user-id': ownerId },
     })
     const data = await res.json()
     if (data.members) {
@@ -57,36 +74,41 @@ export default function TeamPage() {
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
     setInviteError('')
+    setInviteUrl('')
     setInviteLoading(true)
 
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
 
-    try {
-      const res = await fetch(`/api/team/members`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': session.user.id,
-        },
-        body: JSON.stringify({ email: inviteEmail, name: inviteName }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setInviteError(data.error || 'Failed to send invite')
-        setInviteLoading(false)
-        return
-      }
-
-      setInviteEmail('')
-      setInviteName('')
-      await fetchMembers(session.user.id)
-    } catch {
-      setInviteError('Something went wrong')
+    const currentSeats = members.length
+    if (currentSeats >= maxSeats) {
+      setInviteError(`Your plan allows up to ${maxSeats} team members. Upgrade to add more.`)
+      setInviteLoading(false)
+      return
     }
 
+    const res = await fetch('/api/team/invite', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': session.user.id,
+      },
+      body: JSON.stringify({ email: inviteEmail, name: inviteName, ownerId: session.user.id }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      setInviteError(data.error || 'Failed to send invite')
+      setInviteLoading(false)
+      return
+    }
+
+    const fullUrl = `${window.location.origin}${data.inviteUrl}`
+    setInviteUrl(fullUrl)
+    setInviteEmail('')
+    setInviteName('')
+    await fetchMembers(session.user.id)
     setInviteLoading(false)
   }
 
@@ -114,6 +136,10 @@ export default function TeamPage() {
     )
   }
 
+  const acceptedMembers = members.filter(m => m.accepted_at)
+  const pendingMembers = members.filter(m => !m.accepted_at)
+  const usedSeats = members.length
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -123,14 +149,42 @@ export default function TeamPage() {
             Back to Dashboard
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">Team Members</h1>
-          <p className="text-sm text-gray-500 mt-1">Growth plan supports up to 3 team seats total</p>
+          <p className="text-sm text-gray-500 mt-1">{usedSeats} of {maxSeats} seats used</p>
         </div>
       </div>
 
+      {inviteUrl && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6 mb-6">
+          <h3 className="font-semibold text-green-800 mb-2">Invite link ready!</h3>
+          <p className="text-sm text-green-700 mb-3">Share this link with your team member. They'll need to sign up / log in with <strong>{inviteEmail}</strong> to accept.</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              readOnly
+              value={inviteUrl}
+              className="flex-1 rounded-lg border border-green-300 bg-white px-3 py-2 text-sm font-mono"
+            />
+            <button
+              onClick={() => navigator.clipboard.writeText(inviteUrl)}
+              className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition"
+            >
+              Copy
+            </button>
+            <button
+              onClick={() => setInviteUrl('')}
+              className="px-4 py-2 bg-gray-100 text-gray-600 text-sm font-semibold rounded-lg hover:bg-gray-200 transition"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Invite a team member</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">Invite a team member</h2>
         <p className="text-sm text-gray-500 mb-4">
-          Enter the email address of the person you want to invite. They will be able to view and manage your QR codes.
+          Send an invite to a collaborator. They&apos;ll get access to view and manage your QR codes.
+          Growth plan supports {maxSeats} team members total.
         </p>
         <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3">
           <input
@@ -150,10 +204,10 @@ export default function TeamPage() {
           />
           <button
             type="submit"
-            disabled={inviteLoading}
-            className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition disabled:opacity-50"
+            disabled={inviteLoading || usedSeats >= maxSeats}
+            className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {inviteLoading ? 'Sending...' : 'Send invite'}
+            {inviteLoading ? 'Creating...' : 'Create invite link'}
           </button>
         </form>
         {inviteError && <p className="text-sm text-red-600 mt-2">{inviteError}</p>}
@@ -174,7 +228,7 @@ export default function TeamPage() {
               <td className="px-6 py-4">
                 <div>
                   <p className="font-medium text-gray-900">{userEmail}</p>
-                  <p className="text-sm text-gray-500">Account owner</p>
+                  <p className="text-sm text-gray-500">You</p>
                 </div>
               </td>
               <td className="px-6 py-4">
@@ -199,7 +253,11 @@ export default function TeamPage() {
                   <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded-full">Member</span>
                 </td>
                 <td className="px-6 py-4">
-                  <span className="text-sm text-gray-500">Pending invite</span>
+                  {member.accepted_at ? (
+                    <span className="text-sm text-green-600">Active</span>
+                  ) : (
+                    <span className="text-sm text-amber-600">Pending invite</span>
+                  )}
                 </td>
                 <td className="px-6 py-4 text-right">
                   <button
@@ -214,7 +272,7 @@ export default function TeamPage() {
             {members.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
-                  No team members yet. Send an invite above to get started.
+                  No team members yet. Create an invite link above.
                 </td>
               </tr>
             )}
