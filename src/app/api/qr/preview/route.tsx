@@ -238,11 +238,12 @@ async function applyFrame(
     case 'caption-bottom': {
       if (!caption) return pngBase64
       const bannerHeight = 60
-      const totalHeight = size + bannerHeight
+      const qrSquareSize = size - 30
+      const totalHeight = qrSquareSize + bannerHeight
 
       try {
         const normalizedQr = await sharp(qrBuffer)
-          .resize(size, size, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+          .resize(qrSquareSize, qrSquareSize, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
           .toBuffer()
 
         const textRes = await new ImageResponse(
@@ -277,8 +278,8 @@ async function applyFrame(
           },
         })
           .composite([
-            { input: normalizedQr, top: 0, left: 0 },
-            { input: textBuffer, top: size, left: 0 },
+            { input: normalizedQr, top: 0, left: Math.round((size - qrSquareSize) / 2) },
+            { input: textBuffer, top: qrSquareSize, left: 0 },
           ])
           .png()
           .toBuffer()
@@ -291,12 +292,13 @@ async function applyFrame(
 
     case 'caption-top-bottom': {
       if (!caption || !subcaption) return pngBase64
-      const bannerHeight = 60
-      const totalHeight = size + bannerHeight * 2
+      const bannerHeight = 50
+      const qrSquareSize = size - 30
+      const totalHeight = qrSquareSize + bannerHeight * 2
 
       try {
         const normalizedQr = await sharp(qrBuffer)
-          .resize(size, size, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+          .resize(qrSquareSize, qrSquareSize, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
           .toBuffer()
 
         const [topRes, bottomRes] = await Promise.all([
@@ -309,7 +311,7 @@ async function applyFrame(
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: fg,
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: 600,
                 fontFamily: 'Arial',
                 backgroundColor: 'white',
@@ -330,7 +332,7 @@ async function applyFrame(
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: fg,
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: 600,
                 fontFamily: 'Arial',
                 backgroundColor: 'white',
@@ -356,8 +358,8 @@ async function applyFrame(
         })
           .composite([
             { input: topBuffer, top: 0, left: 0 },
-            { input: normalizedQr, top: bannerHeight, left: 0 },
-            { input: bottomBuffer, top: size + bannerHeight, left: 0 },
+            { input: normalizedQr, top: bannerHeight, left: Math.round((size - qrSquareSize) / 2) },
+            { input: bottomBuffer, top: qrSquareSize + bannerHeight, left: 0 },
           ])
           .png()
           .toBuffer()
