@@ -18,6 +18,26 @@ export default function DashboardLayout({
 }) {
   const router = useRouter()
   const [billingLoading, setBillingLoading] = useState(false)
+  const [isGrowth, setIsGrowth] = useState(false)
+
+  useEffect(() => {
+    async function checkTier() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('tier')
+        .eq('user_id', user.id)
+        .in('status', ['active', 'trialing'])
+        .maybeSingle()
+
+      if (sub?.tier === 'growth') {
+        setIsGrowth(true)
+      }
+    }
+    checkTier()
+  }, [])
 
   async function handleManageBilling() {
     setBillingLoading(true)
@@ -58,6 +78,11 @@ export default function DashboardLayout({
             <Link href="/dashboard" className="text-sm font-medium text-gray-600 hover:text-gray-900">
               My Codes
             </Link>
+            {isGrowth && (
+              <Link href="/dashboard/team" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+                Team
+              </Link>
+            )}
             <button
               onClick={handleManageBilling}
               disabled={billingLoading}
