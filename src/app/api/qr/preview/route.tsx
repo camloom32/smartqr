@@ -241,54 +241,43 @@ async function applyFrame(
       const totalHeight = size + bannerHeight
 
       try {
-        const frameResponse = await new ImageResponse(
+        const textRes = await new ImageResponse(
           <div
             style={{
               width: size,
-              height: totalHeight,
+              height: bannerHeight,
               display: 'flex',
-              flexDirection: 'column',
-              backgroundColor: 'white',
               alignItems: 'center',
-              justifyContent: 'flex-start',
+              justifyContent: 'center',
+              color: fg,
+              fontSize: 28,
+              fontWeight: 700,
+              fontFamily: 'Arial',
+              backgroundColor: 'white',
             }}
           >
-            <div
-              style={{
-                width: size,
-                height: size,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <img
-                width={size}
-                height={size}
-                src={`data:image/png;base64,${qrBuffer.toString('base64')}`}
-                style={{ width: size, height: size, objectFit: 'contain' }}
-              />
-            </div>
-            <div
-              style={{
-                width: size,
-                height: bannerHeight,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: fg,
-                fontSize: 28,
-                fontWeight: 700,
-                fontFamily: 'Arial',
-                backgroundColor: 'white',
-              }}
-            >
-              {caption}
-            </div>
+            {caption}
           </div>,
-          { width: size, height: totalHeight },
+          { width: size, height: bannerHeight },
         )
-        return Buffer.from(await frameResponse.arrayBuffer()).toString('base64')
+        const textBuffer = Buffer.from(await textRes.arrayBuffer())
+
+        const finalBuffer = await sharp({
+          create: {
+            width: size,
+            height: totalHeight,
+            channels: 4,
+            background: { r: 255, g: 255, b: 255, alpha: 1 },
+          },
+        })
+          .composite([
+            { input: qrBuffer, top: 0, left: 0 },
+            { input: textBuffer, top: size, left: 0 },
+          ])
+          .png()
+          .toBuffer()
+
+        return finalBuffer.toString('base64')
       } catch {
         return qrBuffer.toString('base64')
       }
@@ -300,18 +289,8 @@ async function applyFrame(
       const totalHeight = size + bannerHeight * 2
 
       try {
-        const frameResponse = await new ImageResponse(
-          <div
-            style={{
-              width: size,
-              height: totalHeight,
-              display: 'flex',
-              flexDirection: 'column',
-              backgroundColor: 'white',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-            }}
-          >
+        const [topRes, bottomRes] = await Promise.all([
+          new ImageResponse(
             <div
               style={{
                 width: size,
@@ -327,23 +306,10 @@ async function applyFrame(
               }}
             >
               {subcaption}
-            </div>
-            <div
-              style={{
-                width: size,
-                height: size,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <img
-                width={size}
-                height={size}
-                src={`data:image/png;base64,${qrBuffer.toString('base64')}`}
-                style={{ width: size, height: size, objectFit: 'contain' }}
-              />
-            </div>
+            </div>,
+            { width: size, height: bannerHeight },
+          ),
+          new ImageResponse(
             <div
               style={{
                 width: size,
@@ -359,11 +325,30 @@ async function applyFrame(
               }}
             >
               {caption}
-            </div>
-          </div>,
-          { width: size, height: totalHeight },
-        )
-        return Buffer.from(await frameResponse.arrayBuffer()).toString('base64')
+            </div>,
+            { width: size, height: bannerHeight },
+          ),
+        ])
+
+        const [topBuffer, bottomBuffer] = [Buffer.from(await topRes.arrayBuffer()), Buffer.from(await bottomRes.arrayBuffer())]
+
+        const finalBuffer = await sharp({
+          create: {
+            width: size,
+            height: totalHeight,
+            channels: 4,
+            background: { r: 255, g: 255, b: 255, alpha: 1 },
+          },
+        })
+          .composite([
+            { input: topBuffer, top: 0, left: 0 },
+            { input: qrBuffer, top: bannerHeight, left: 0 },
+            { input: bottomBuffer, top: size + bannerHeight, left: 0 },
+          ])
+          .png()
+          .toBuffer()
+
+        return finalBuffer.toString('base64')
       } catch {
         return qrBuffer.toString('base64')
       }
