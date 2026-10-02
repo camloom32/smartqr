@@ -162,30 +162,30 @@ async function applyFrame(
 
   switch (frame) {
     case 'border': {
-      const padded = await sharp({
-        create: { width: size + 20, height: size + 20, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
-      }).composite([{ input: qrBuffer, blend: 'over', top: 10, left: 10 }]).png().toBuffer()
+      const borderWidth = 15
+      const innerSize = size - borderWidth * 2
 
-      const bordered = await sharp(padded).extend({
-        top: 10, bottom: 10, left: 10, right: 10,
-        background: { r: parseInt(fg.slice(1, 3), 16), g: parseInt(fg.slice(3, 5), 16), b: parseInt(fg.slice(5, 7), 16), alpha: 1 },
-      }).png().toBuffer()
+      const resized = await sharp(qrBuffer)
+        .resize(innerSize, innerSize, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+        .toBuffer()
+
+      const bordered = await sharp({
+        create: { width: size, height: size, channels: 4, background: { r: parseInt(fg.slice(1, 3), 16), g: parseInt(fg.slice(3, 5), 16), b: parseInt(fg.slice(5, 7), 16), alpha: 1 } },
+      }).composite([{ input: resized, blend: 'over', top: borderWidth, left: borderWidth }]).png().toBuffer()
 
       return bordered.toString('base64')
     }
 
     case 'rounded': {
+      const roundedRadius = 50
+
       const maskSvg = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="${size}" height="${size}" rx="40" ry="40" fill="white"/>
+        <rect width="${size}" height="${size}" rx="${roundedRadius}" ry="${roundedRadius}" fill="white"/>
       </svg>`
-      const maskBuffer = await sharp(Buffer.from(maskSvg)).png().toBuffer()
+      const whiteRounded = await sharp(Buffer.from(maskSvg)).png().toBuffer()
 
-      const withBg = await sharp({
-        create: { width: size, height: size, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
-      }).composite([{ input: qrBuffer, blend: 'over' }]).png().toBuffer()
-
-      const masked = await sharp(withBg)
-        .composite([{ input: maskBuffer, blend: 'dest-in' }])
+      const masked = await sharp(whiteRounded)
+        .composite([{ input: qrBuffer, blend: 'dest-over' }])
         .png()
         .toBuffer()
 
@@ -197,7 +197,7 @@ async function applyFrame(
       const bannerHeight = 70
       const totalHeight = size + bannerHeight
 
-      const textBuffer = await renderText(caption, size, 24, fg)
+      const textBuffer = await renderBlankBanner(size, 70, 'white')
 
       const canvas = await sharp({
         create: { width: size, height: totalHeight, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
@@ -215,8 +215,8 @@ async function applyFrame(
       const totalHeight = size + bannerHeight * 2
 
       const [topBuffer, bottomBuffer] = await Promise.all([
-        renderText(subcaption, size, 22, fg),
-        renderText(caption, size, 24, fg),
+        renderBlankBanner(size, 50, 'white'),
+        renderBlankBanner(size, 50, 'white'),
       ])
 
       const canvas = await sharp({
@@ -236,7 +236,6 @@ async function applyFrame(
 
       const badgeSvg = `<svg width="${badgeSize}" height="${badgeSize}" xmlns="http://www.w3.org/2000/svg">
         <circle cx="${badgeSize / 2}" cy="${badgeSize / 2}" r="${badgeSize / 2}" fill="#2563eb"/>
-        <text x="${badgeSize / 2}" y="${badgeSize / 2 + 10}" text-anchor="middle" font-family="sans-serif" font-size="36" font-weight="bold" fill="white">SCAN</text>
       </svg>`
       const badgeBuffer = await sharp(Buffer.from(badgeSvg)).png().toBuffer()
 
@@ -255,15 +254,9 @@ async function applyFrame(
   }
 }
 
-function escapeXml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')
-}
-
-async function renderText(text: string, width: number, fontSize: number, fontColor: string, bgColor = 'white'): Promise<Buffer> {
-  const height = Math.round(fontSize * 2)
+async function renderBlankBanner(width: number, height: number, bgColor = 'white'): Promise<Buffer> {
   const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
     <rect width="${width}" height="${height}" fill="${bgColor}"/>
-    <text x="${width / 2}" y="${height / 2 + fontSize / 3}" text-anchor="middle" font-family="sans-serif" font-size="${fontSize}" font-weight="bold" fill="${fontColor}">${escapeXml(text)}</text>
   </svg>`
   return sharp(Buffer.from(svg)).png().toBuffer()
 }
