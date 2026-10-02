@@ -86,14 +86,27 @@ export default function CreateQRPage() {
   const logoInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    function handleTierUpdate() {
-      const tier = localStorage.getItem('smartqr_tier')
-      if (tier) setTier(tier as 'free' | 'starter' | 'growth')
-    }
+    async function checkTier() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
 
-    handleTierUpdate()
-    window.addEventListener('smartqr_tier', handleTierUpdate)
-    return () => window.removeEventListener('smartqr_tier', handleTierUpdate)
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select('tier')
+          .eq('user_id', user.id)
+          .in('status', ['active', 'trialing'])
+          .maybeSingle()
+
+        const detectedTier = sub?.tier || 'free'
+        console.log('[create] tier check:', detectedTier, sub)
+        setTier(detectedTier as 'free' | 'starter' | 'growth')
+        localStorage.setItem('smartqr_tier', detectedTier)
+      } catch (e) {
+        console.error('[create] tier error:', e)
+      }
+    }
+    checkTier()
   }, [])
 
   useEffect(() => {
