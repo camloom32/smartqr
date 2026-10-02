@@ -88,6 +88,7 @@ export default function NewCodePage() {
       ])
 
       const membershipData = await membershipRes.json()
+      console.log('[DEBUG] membershipData:', JSON.stringify(membershipData))
       const isTeamMember = membershipData.isTeamMember
       const ownerId = membershipData.ownerId
       const teamTier = membershipData.teamTier
@@ -213,6 +214,7 @@ export default function NewCodePage() {
       if (logo) {
         logoBase64 = await getBase64FromFile(logo)
       }
+      console.log('[DEBUG] handleSubmit - teamOwnerId:', teamOwnerId, 'plan:', plan)
       const res = await fetch('/api/codes', {
         method: 'POST',
         headers: {

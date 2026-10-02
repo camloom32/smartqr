@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
     .single()
 
   if (!profile?.email) {
+    console.log('[DEBUG membership API] No profile found for userId:', userId)
     return NextResponse.json({ isTeamMember: false })
   }
 
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
     .single()
 
   if (!membership) {
+    console.log('[DEBUG membership API] No membership found for email:', profile?.email)
     return NextResponse.json({ isTeamMember: false })
   }
 
@@ -47,6 +49,7 @@ export async function GET(req: NextRequest) {
     .in('status', ['active', 'trialing'])
     .single()
 
+  console.log('[DEBUG membership API] userId:', userId, 'profile:', profile, 'membership:', membership, 'ownerSub:', ownerSub)
   return NextResponse.json({
     isTeamMember: true,
     ownerId: membership.owner_id,

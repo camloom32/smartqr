@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
   }
 
   const effectiveUserId = ownerId || user.id
+  console.log('[DEBUG codes API] ownerId from body:', ownerId, 'effectiveUserId:', effectiveUserId, 'user.id:', user.id)
 
   const { data: subscription } = await supabase
     .from('subscriptions')
