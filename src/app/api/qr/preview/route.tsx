@@ -196,16 +196,7 @@ async function applyFrame(
   subcaption?: string,
   size = 400,
 ): Promise<string> {
-  let qrBuffer = Buffer.from(pngBase64, 'base64')
-  const meta = await sharp(qrBuffer).metadata()
-  const actualWidth = meta.width || size
-  const actualHeight = meta.height || size
-
-  if (actualWidth !== actualHeight) {
-    qrBuffer = await sharp(qrBuffer)
-      .resize(size, size, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
-      .toBuffer()
-  }
+  const qrBuffer = Buffer.from(pngBase64, 'base64')
 
   switch (frame) {
     case 'border': {
@@ -247,7 +238,8 @@ async function applyFrame(
     case 'caption-bottom': {
       if (!caption) return pngBase64
       const bannerHeight = 80
-      const totalHeight = size + bannerHeight
+      const qrHeight = size + 40
+      const totalHeight = qrHeight + bannerHeight
 
       try {
         const frameResponse = await new ImageResponse(
@@ -262,8 +254,9 @@ async function applyFrame(
           >
             <img
               width={size}
-              height={size}
+              height={qrHeight}
               src={`data:image/png;base64,${qrBuffer.toString('base64')}`}
+              style={{ objectFit: 'contain', backgroundColor: 'white' }}
             />
             <div
               style={{
@@ -292,7 +285,8 @@ async function applyFrame(
     case 'caption-top-bottom': {
       if (!caption || !subcaption) return pngBase64
       const bannerHeight = 60
-      const totalHeight = size + bannerHeight * 2
+      const qrHeight = size + 40
+      const totalHeight = bannerHeight + qrHeight + bannerHeight
 
       try {
         const frameResponse = await new ImageResponse(
@@ -322,8 +316,9 @@ async function applyFrame(
             </div>
             <img
               width={size}
-              height={size}
+              height={qrHeight}
               src={`data:image/png;base64,${qrBuffer.toString('base64')}`}
+              style={{ objectFit: 'contain', backgroundColor: 'white' }}
             />
             <div
               style={{
