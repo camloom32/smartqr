@@ -20,8 +20,8 @@ function loadFontSync(): void {
   ]
 
   for (const p of fontPaths) {
-    if (existsSync(p)) {
-      const fontData = readFileSync(p)
+    if (existsSync(/*turbopackIgnore: true*/ p)) {
+      const fontData = readFileSync(/*turbopackIgnore: true*/ p)
       GlobalFonts.register(fontData, 'RobotoBold')
       return
     }
