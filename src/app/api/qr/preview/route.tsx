@@ -238,8 +238,7 @@ async function applyFrame(
     case 'caption-bottom': {
       if (!caption) return pngBase64
       const bannerHeight = 80
-      const qrHeight = size + 40
-      const totalHeight = qrHeight + bannerHeight
+      const totalHeight = size + bannerHeight
 
       try {
         const frameResponse = await new ImageResponse(
@@ -250,16 +249,29 @@ async function applyFrame(
               display: 'flex',
               flexDirection: 'column',
               backgroundColor: 'white',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
             }}
           >
-            <img
-              width={size}
-              height={qrHeight}
-              src={`data:image/png;base64,${qrBuffer.toString('base64')}`}
-              style={{ objectFit: 'contain', backgroundColor: 'white' }}
-            />
             <div
               style={{
+                width: size,
+                height: size,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <img
+                width={size}
+                height={size}
+                src={`data:image/png;base64,${qrBuffer.toString('base64')}`}
+                style={{ width: size, height: size, objectFit: 'contain' }}
+              />
+            </div>
+            <div
+              style={{
+                width: size,
                 height: bannerHeight,
                 display: 'flex',
                 alignItems: 'center',
@@ -285,8 +297,7 @@ async function applyFrame(
     case 'caption-top-bottom': {
       if (!caption || !subcaption) return pngBase64
       const bannerHeight = 60
-      const qrHeight = size + 40
-      const totalHeight = bannerHeight + qrHeight + bannerHeight
+      const totalHeight = size + bannerHeight * 2
 
       try {
         const frameResponse = await new ImageResponse(
@@ -297,10 +308,13 @@ async function applyFrame(
               display: 'flex',
               flexDirection: 'column',
               backgroundColor: 'white',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
             }}
           >
             <div
               style={{
+                width: size,
                 height: bannerHeight,
                 display: 'flex',
                 alignItems: 'center',
@@ -314,14 +328,25 @@ async function applyFrame(
             >
               {subcaption}
             </div>
-            <img
-              width={size}
-              height={qrHeight}
-              src={`data:image/png;base64,${qrBuffer.toString('base64')}`}
-              style={{ objectFit: 'contain', backgroundColor: 'white' }}
-            />
             <div
               style={{
+                width: size,
+                height: size,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <img
+                width={size}
+                height={size}
+                src={`data:image/png;base64,${qrBuffer.toString('base64')}`}
+                style={{ width: size, height: size, objectFit: 'contain' }}
+              />
+            </div>
+            <div
+              style={{
+                width: size,
                 height: bannerHeight,
                 display: 'flex',
                 alignItems: 'center',
