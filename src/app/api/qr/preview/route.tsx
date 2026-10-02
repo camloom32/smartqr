@@ -237,15 +237,18 @@ async function applyFrame(
 
     case 'caption-bottom': {
       if (!caption) return pngBase64
-      const bannerHeight = 80
+      const bannerHeight = 100
       const totalHeight = size + bannerHeight
 
-      const textBuffer = await renderTextBanner(caption, size, bannerHeight, 28, fg)
+      const qrSized = await sharp(qrBuffer).resize(size, size, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } }).toBuffer()
+      const textBuffer = await sharp(await renderTextBanner(caption, size, bannerHeight, 32, fg))
+        .resize(size, bannerHeight)
+        .toBuffer()
 
       const resultCanvas = await sharp({
         create: { width: size, height: totalHeight, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
       }).composite([
-        { input: qrBuffer, blend: 'over', top: 0, left: 0 },
+        { input: qrSized, blend: 'over', top: 0, left: 0 },
         { input: textBuffer, blend: 'over', top: size, left: 0 },
       ]).png().toBuffer()
 
@@ -254,19 +257,24 @@ async function applyFrame(
 
     case 'caption-top-bottom': {
       if (!caption || !subcaption) return pngBase64
-      const bannerHeight = 60
+      const bannerHeight = 70
       const totalHeight = size + bannerHeight * 2
 
+      const qrSized = await sharp(qrBuffer).resize(size, size, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } }).toBuffer()
+      const [topRaw, bottomRaw] = await Promise.all([
+        renderTextBanner(subcaption, size, bannerHeight, 30, fg),
+        renderTextBanner(caption, size, bannerHeight, 30, fg),
+      ])
       const [topBuffer, bottomBuffer] = await Promise.all([
-        renderTextBanner(subcaption, size, bannerHeight, 26, fg),
-        renderTextBanner(caption, size, bannerHeight, 26, fg),
+        sharp(topRaw).resize(size, bannerHeight).toBuffer(),
+        sharp(bottomRaw).resize(size, bannerHeight).toBuffer(),
       ])
 
       const resultCanvas = await sharp({
         create: { width: size, height: totalHeight, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
       }).composite([
         { input: topBuffer, blend: 'over', top: 0, left: 0 },
-        { input: qrBuffer, blend: 'over', top: bannerHeight, left: 0 },
+        { input: qrSized, blend: 'over', top: bannerHeight, left: 0 },
         { input: bottomBuffer, blend: 'over', top: size + bannerHeight, left: 0 },
       ]).png().toBuffer()
 
