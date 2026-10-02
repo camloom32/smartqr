@@ -41,8 +41,8 @@
 
 ## Pricing
 - Free: static QR codes only (no redirect server needed)
-- Starter ($9/mo): 3 dynamic codes
-- Growth ($19/mo): 15 dynamic codes
+- Starter ($9/mo): 5 dynamic codes
+- Growth ($19/mo): 25 dynamic codes
 - Tier 3 (custom domains): deferred
 
 ## Key Files

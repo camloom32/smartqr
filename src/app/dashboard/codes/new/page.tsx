@@ -85,7 +85,7 @@ export default function NewCodePage() {
     setLogo(file)
   }
 
-  const maxCodes = plan === 'starter' ? 3 : 15
+  const maxCodes = plan === 'starter' ? 5 : 25
   const canCreate = plan !== 'free' && codeCount < maxCodes
 
   const getContrastRatio = (hex1: string, hex2: string): number => {

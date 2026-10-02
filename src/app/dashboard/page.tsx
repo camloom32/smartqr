@@ -82,7 +82,7 @@ export default function DashboardPage() {
   }
 
   const codeCount = codes.length
-  const maxCodes = tier === 'free' ? 0 : tier === 'starter' ? 3 : 15
+  const maxCodes = tier === 'free' ? 0 : tier === 'starter' ? 5 : 25
   const canCreateMore = tier !== 'free' && codeCount < maxCodes
 
   return (

@@ -48,7 +48,7 @@ const TIERS: Tier[] = [
     priceYearly: '$79',
     description: 'For individuals and small teams',
     features: [
-      'Up to 3 active dynamic QR codes',
+      'Up to 5 active dynamic QR codes',
       'Unlimited scan counts',
       'Edit destination URLs anytime',
       'Full analytics dashboard',
@@ -68,7 +68,7 @@ const TIERS: Tier[] = [
     priceYearly: '$159',
     description: 'For growing businesses',
     features: [
-      'Up to 15 active dynamic QR codes',
+      'Up to 25 active dynamic QR codes',
       'Everything in Starter',
       'Bulk creation tools',
       '2–3 team seats',

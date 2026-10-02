@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     .eq('user_id', user.id)
     .eq('is_active', true)
 
-  const maxCodes = tier === 'free' ? 1 : tier === 'starter' ? 3 : 15
+  const maxCodes = tier === 'free' ? 1 : tier === 'starter' ? 5 : 25
   if ((count || 0) >= maxCodes) {
     return NextResponse.json(
       { error: tier === 'free'
