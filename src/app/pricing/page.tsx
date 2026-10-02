@@ -126,7 +126,7 @@ export default function PricingPage() {
       if (data.url) {
         window.location.href = data.url
       } else {
-        console.error('Checkout error:', data.error)
+        alert(data.error || 'Checkout failed. Please try again.')
         setLoading(null)
       }
     } catch (err) {
