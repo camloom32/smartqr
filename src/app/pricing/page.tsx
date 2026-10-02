@@ -213,14 +213,26 @@ export default function PricingPage() {
                   <h2 className="text-xl font-bold text-gray-900 mb-1">{tier.name}</h2>
                   <p className="text-sm text-gray-500 mb-4">{tier.description}</p>
                   <div className="mb-6">
-                    <span className="text-4xl font-bold text-gray-900">
-                      {billing === 'monthly' ? tier.priceMonthly : tier.priceYearly}
-                    </span>
-                    <span className="text-gray-500">/{billing === 'monthly' ? 'mo' : 'yr'}</span>
-                    {billing === 'yearly' && tier.priceYearly !== '$0' && (
-                      <p className="text-sm text-green-600 mt-1">
-                        Save ${(parseInt(tier.priceMonthly.replace('$', '')) * 12 - parseInt(tier.priceYearly.replace('$', '')))}/year
-                      </p>
+                    {billing === 'yearly' && tier.id !== 'free' ? (
+                      <div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-4xl font-bold text-green-600">
+                            ${(parseInt(tier.priceYearly.replace('$', '')) / 2).toFixed(2)}
+                          </span>
+                          <span className="text-gray-400 line-through text-lg">
+                            ${tier.priceYearly.replace('$', '')}
+                          </span>
+                        </div>
+                        <span className="text-gray-500 text-sm">/year first year</span>
+                        <p className="text-xs text-green-600 mt-1 font-medium">50% off — then ${tier.priceYearly}/yr</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="text-4xl font-bold text-gray-900">
+                          {billing === 'monthly' ? tier.priceMonthly : tier.priceYearly}
+                        </span>
+                        <span className="text-gray-500">/{billing === 'monthly' ? 'mo' : 'yr'}</span>
+                      </div>
                     )}
                   </div>
                   <ul className="space-y-3 mb-8 flex-1">
