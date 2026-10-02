@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
       metadata: { userId, plan, billing },
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/pricing`,
+      allow_promotion_codes: true,
       subscription_data: {
         metadata: { userId, plan, billing },
         trial_period_days: 14,
