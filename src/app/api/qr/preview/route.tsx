@@ -238,12 +238,12 @@ async function applyFrame(
     case 'caption-bottom': {
       if (!caption) return pngBase64
       const bannerHeight = 60
-      const qrSquareSize = size - 30
-      const totalHeight = qrSquareSize + bannerHeight
+      const qrSize = size - bannerHeight
+      const totalHeight = qrSize + bannerHeight
 
       try {
         const normalizedQr = await sharp(qrBuffer)
-          .resize(qrSquareSize, qrSquareSize, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+          .resize(qrSize, qrSize, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
           .toBuffer()
 
         const textRes = await new ImageResponse(
@@ -278,8 +278,8 @@ async function applyFrame(
           },
         })
           .composite([
-            { input: normalizedQr, top: 0, left: Math.round((size - qrSquareSize) / 2) },
-            { input: textBuffer, top: qrSquareSize, left: 0 },
+            { input: normalizedQr, top: 0, left: Math.round((size - qrSize) / 2) },
+            { input: textBuffer, top: qrSize, left: 0 },
           ])
           .png()
           .toBuffer()
@@ -293,12 +293,12 @@ async function applyFrame(
     case 'caption-top-bottom': {
       if (!caption || !subcaption) return pngBase64
       const bannerHeight = 50
-      const qrSquareSize = size - 30
-      const totalHeight = qrSquareSize + bannerHeight * 2
+      const qrSize = size - bannerHeight
+      const totalHeight = qrSize + bannerHeight * 2
 
       try {
         const normalizedQr = await sharp(qrBuffer)
-          .resize(qrSquareSize, qrSquareSize, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+          .resize(qrSize, qrSize, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
           .toBuffer()
 
         const [topRes, bottomRes] = await Promise.all([
@@ -358,8 +358,8 @@ async function applyFrame(
         })
           .composite([
             { input: topBuffer, top: 0, left: 0 },
-            { input: normalizedQr, top: bannerHeight, left: Math.round((size - qrSquareSize) / 2) },
-            { input: bottomBuffer, top: qrSquareSize + bannerHeight, left: 0 },
+            { input: normalizedQr, top: bannerHeight, left: Math.round((size - qrSize) / 2) },
+            { input: bottomBuffer, top: qrSize + bannerHeight, left: 0 },
           ])
           .png()
           .toBuffer()
