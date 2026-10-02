@@ -73,10 +73,7 @@ export default function NewCodePage() {
   const [isTeamMember, setIsTeamMember] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    const stored = localStorage.getItem('smartqr_tier') as 'free' | 'starter' | 'growth' | null
-    if (stored) setPlan(stored)
-  }, [])
+
 
   useEffect(() => {
     const fetchData = async () => {
