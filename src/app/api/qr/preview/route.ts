@@ -1,8 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { QRCodeStyling, DotType } from '@liquid-js/qr-code-styling'
 import sharp from 'sharp'
+import { readFileSync, existsSync } from 'fs'
+import { join } from 'path'
+import { createCanvas, loadFont, GlobalFonts } from '@napi-rs/canvas'
 
 const DOT_TYPE_STRINGS: string[] = Object.values(DotType)
+
+let FONT_LOADED = false
+
+function loadFontSync(): void {
+  if (FONT_LOADED) return
+  FONT_LOADED = true
+
+  const fontPaths = [
+    join(process.cwd(), 'public', 'fonts', 'Roboto-Bold.ttf'),
+    join(process.cwd(), 'fonts', 'Roboto-Bold.ttf'),
+    '/usr/share/fonts/truetype/roboto/Roboto-Bold.ttf',
+  ]
+
+  for (const p of fontPaths) {
+    if (existsSync(p)) {
+      const fontData = readFileSync(p)
+      GlobalFonts.register(fontData, 'RobotoBold')
+      return
+    }
+  }
+}
+
+function renderTextWithCanvas(text: string, width: number, fontSize: number, fontColor: string, bgColor = '#ffffff'): Buffer {
+  loadFontSync()
+
+  const height = Math.round(fontSize * 2)
+  const canvas = createCanvas(width, height)
+  const ctx = canvas.getContext('2d')
+
+  ctx.fillStyle = bgColor
+  ctx.fillRect(0, 0, width, height)
+
+  ctx.fillStyle = fontColor
+  ctx.font = `bold ${fontSize}px "RobotoBold", sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, width / 2, height / 2)
+
+  return canvas.toBuffer('image/png')
+}
 
 function getDotType(style: string): DotType {
   if (DOT_TYPE_STRINGS.includes(style)) return style as DotType
@@ -185,7 +228,7 @@ async function applyFrame(
       const whiteRounded = await sharp(Buffer.from(maskSvg)).png().toBuffer()
 
       const masked = await sharp(whiteRounded)
-        .composite([{ input: qrBuffer, blend: 'dest-over' }])
+        .composite([{ input: qrBuffer, blend: 'over' }])
         .png()
         .toBuffer()
 
@@ -197,16 +240,16 @@ async function applyFrame(
       const bannerHeight = 70
       const totalHeight = size + bannerHeight
 
-      const textBuffer = await renderBlankBanner(size, 70, 'white')
+      const textBuffer = renderTextWithCanvas(caption, size, 24, fg)
 
-      const canvas = await sharp({
+      const resultCanvas = await sharp({
         create: { width: size, height: totalHeight, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
       }).composite([
         { input: qrBuffer, blend: 'over', top: 0, left: 0 },
         { input: textBuffer, blend: 'over', top: size, left: 0 },
       ]).png().toBuffer()
 
-      return canvas.toString('base64')
+      return resultCanvas.toString('base64')
     }
 
     case 'caption-top-bottom': {
@@ -214,12 +257,10 @@ async function applyFrame(
       const bannerHeight = 50
       const totalHeight = size + bannerHeight * 2
 
-      const [topBuffer, bottomBuffer] = await Promise.all([
-        renderBlankBanner(size, 50, 'white'),
-        renderBlankBanner(size, 50, 'white'),
-      ])
+      const topBuffer = renderTextWithCanvas(subcaption, size, 22, fg)
+      const bottomBuffer = renderTextWithCanvas(caption, size, 24, fg)
 
-      const canvas = await sharp({
+      const resultCanvas = await sharp({
         create: { width: size, height: totalHeight, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
       }).composite([
         { input: topBuffer, blend: 'over', top: 0, left: 0 },
@@ -227,26 +268,33 @@ async function applyFrame(
         { input: bottomBuffer, blend: 'over', top: size + bannerHeight, left: 0 },
       ]).png().toBuffer()
 
-      return canvas.toString('base64')
+      return resultCanvas.toString('base64')
     }
 
     case 'badge-corner': {
       const badgeSize = 90
       const margin = 12
 
+      const badgeTextBuffer = renderTextWithCanvas('SCAN', badgeSize, 28, '#ffffff', '#2563eb')
+
       const badgeSvg = `<svg width="${badgeSize}" height="${badgeSize}" xmlns="http://www.w3.org/2000/svg">
         <circle cx="${badgeSize / 2}" cy="${badgeSize / 2}" r="${badgeSize / 2}" fill="#2563eb"/>
       </svg>`
-      const badgeBuffer = await sharp(Buffer.from(badgeSvg)).png().toBuffer()
+      const badgeBgBuffer = await sharp(Buffer.from(badgeSvg)).png().toBuffer()
 
-      const canvas = await sharp({
+      const badgeBg = await sharp(badgeBgBuffer)
+        .composite([{ input: badgeTextBuffer, blend: 'over' }])
+        .png()
+        .toBuffer()
+
+      const resultCanvas = await sharp({
         create: { width: size, height: size, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
       }).composite([
         { input: qrBuffer, blend: 'over' },
-        { input: badgeBuffer, blend: 'over', top: size - badgeSize - margin, left: size - badgeSize - margin },
+        { input: badgeBg, blend: 'over', top: size - badgeSize - margin, left: size - badgeSize - margin },
       ]).png().toBuffer()
 
-      return canvas.toString('base64')
+      return resultCanvas.toString('base64')
     }
 
     default:
@@ -254,9 +302,4 @@ async function applyFrame(
   }
 }
 
-async function renderBlankBanner(width: number, height: number, bgColor = 'white'): Promise<Buffer> {
-  const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-    <rect width="${width}" height="${height}" fill="${bgColor}"/>
-  </svg>`
-  return sharp(Buffer.from(svg)).png().toBuffer()
-}
+
