@@ -12,7 +12,19 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const TIERS = [
+type Tier = {
+  id: string
+  name: string
+  priceMonthly: string
+  priceYearly: string
+  description: string
+  features: string[]
+  cta: string
+  checkout: string
+  highlighted: boolean
+}
+
+const TIERS: Tier[] = [
   {
     id: 'free',
     name: 'Free',
@@ -26,7 +38,7 @@ const TIERS = [
       'No dynamic editing',
     ],
     cta: 'Create QR codes',
-    href: '/create',
+    checkout: '',
     highlighted: false,
   },
   {
@@ -45,10 +57,9 @@ const TIERS = [
       'High-res SVG, PNG, PDF export',
       'No watermark',
     ],
-    cta: 'Start free trial',
-    href: '/signup?plan=starter',
-    highlighted: true,
+    cta: 'Subscribe',
     checkout: 'starter',
+    highlighted: true,
   },
   {
     id: 'growth',
@@ -63,19 +74,41 @@ const TIERS = [
       '2–3 team seats',
       'Priority support',
     ],
-    cta: 'Start free trial',
-    href: '/signup?plan=growth',
-    highlighted: false,
+    cta: 'Subscribe',
     checkout: 'growth',
+    highlighted: false,
   },
 ]
 
 export default function PricingPage() {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
+  const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly')
+  const [currentTier, setCurrentTier] = useState<string | null>(null)
+  const [currentStatus, setCurrentStatus] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function checkSubscription() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('tier, status')
+        .eq('user_id', user.id)
+        .in('status', ['active', 'trialing', 'past_due'])
+        .maybeSingle()
+
+      if (sub) {
+        setCurrentTier(sub.tier)
+        setCurrentStatus(sub.status)
+      }
+    }
+    checkSubscription()
+  }, [])
 
   async function handleCheckout(plan: string) {
-    setLoading(plan)
+    setLoading(plan + billing)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
@@ -86,7 +119,7 @@ export default function PricingPage() {
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, userId: user.id }),
+        body: JSON.stringify({ plan, billing, userId: user.id }),
       })
 
       const data = await res.json()
@@ -100,6 +133,22 @@ export default function PricingPage() {
       console.error('Checkout error:', err)
       setLoading(null)
     }
+  }
+
+  function getButtonCta(tier: Tier) {
+    if (tier.id === 'free') return { text: 'Create QR codes', href: '/create', disabled: false }
+    if (currentTier === tier.id && currentStatus === 'active') {
+      return { text: 'Current Plan', href: '/dashboard', disabled: true }
+    }
+    if (currentTier === 'growth' && tier.id === 'starter') {
+      return { text: 'Downgrade', href: '#', disabled: true }
+    }
+    if (currentTier && currentTier !== 'free') {
+      if (tier.id === 'starter' || (tier.id === 'growth' && currentTier === 'starter')) {
+        return { text: 'Upgrade', href: '#', disabled: false, checkout: tier.checkout }
+      }
+    }
+    return { text: tier.cta, href: '#', disabled: false, checkout: tier.checkout }
   }
 
   return (
@@ -118,68 +167,94 @@ export default function PricingPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {TIERS.map((tier) => (
-              <div
-                key={tier.id}
-                className={`rounded-2xl p-8 ${
-                  tier.highlighted
-                    ? 'border-2 border-blue-600 bg-blue-50 shadow-lg relative'
-                    : 'border border-gray-200 bg-white shadow-sm'
+          <div className="flex justify-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-gray-100 rounded-xl p-1">
+              <button
+                onClick={() => setBilling('monthly')}
+                className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
+                  billing === 'monthly'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-900'
                 }`}
               >
-                {tier.highlighted && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                    Most Popular
-                  </span>
-                )}
-                <h2 className="text-xl font-bold text-gray-900 mb-1">{tier.name}</h2>
-                <p className="text-sm text-gray-500 mb-4">{tier.description}</p>
-                <div className="mb-6">
-                  <span className="text-4xl font-bold text-gray-900">{tier.priceMonthly}</span>
-                  <span className="text-gray-500">/month</span>
-                  {tier.priceYearly !== '$0' && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      or {tier.priceYearly}/year
-                    </p>
+                Monthly
+              </button>
+              <button
+                onClick={() => setBilling('yearly')}
+                className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
+                  billing === 'yearly'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                Yearly
+                <span className="ml-2 text-green-600 text-xs font-semibold">Save ~27%</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {TIERS.map((tier) => {
+              const btn = getButtonCta(tier)
+              return (
+                <div
+                  key={tier.id}
+                  className={`rounded-2xl p-8 flex flex-col ${
+                    tier.highlighted
+                      ? 'border-2 border-blue-600 bg-blue-50 shadow-lg relative'
+                      : 'border border-gray-200 bg-white shadow-sm'
+                  }`}
+                >
+                  {tier.highlighted && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                      Most Popular
+                    </span>
+                  )}
+                  <h2 className="text-xl font-bold text-gray-900 mb-1">{tier.name}</h2>
+                  <p className="text-sm text-gray-500 mb-4">{tier.description}</p>
+                  <div className="mb-6">
+                    <span className="text-4xl font-bold text-gray-900">
+                      {billing === 'monthly' ? tier.priceMonthly : tier.priceYearly}
+                    </span>
+                    <span className="text-gray-500">/{billing === 'monthly' ? 'mo' : 'yr'}</span>
+                    {billing === 'yearly' && tier.priceYearly !== '$0' && (
+                      <p className="text-sm text-green-600 mt-1">
+                        Save ${(parseInt(tier.priceMonthly.replace('$', '')) * 12 - parseInt(tier.priceYearly.replace('$', '')))}/year
+                      </p>
+                    )}
+                  </div>
+                  <ul className="space-y-3 mb-8 flex-1">
+                    {tier.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-sm text-gray-700">
+                        <svg className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  {'checkout' in btn && btn.checkout && !btn.disabled ? (
+                    <button
+                      onClick={() => handleCheckout(btn.checkout as string)}
+                      disabled={loading === (btn.checkout as string) + billing}
+                      className={`w-full py-3 px-4 rounded-xl font-semibold transition ${
+                        tier.highlighted
+                          ? 'bg-blue-600 text-white hover:bg-blue-700'
+                          : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                      } disabled:opacity-50`}
+                    >
+                      {loading === (btn.checkout as string) + billing ? 'Redirecting...' : btn.text}
+                    </button>
+                  ) : (
+                    <span className={`block w-full py-3 px-4 rounded-xl font-semibold text-center ${
+                      tier.highlighted ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'
+                    } ${btn.disabled ? 'opacity-60' : ''}`}>
+                      {btn.text}
+                    </span>
                   )}
                 </div>
-                <ul className="space-y-3 mb-8">
-                  {tier.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-gray-700">
-                      <svg className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                {'checkout' in tier && tier.checkout ? (
-                  <button
-                    onClick={() => handleCheckout(tier.checkout as string)}
-                    disabled={loading === tier.checkout}
-                    className={`w-full py-3 px-4 rounded-xl font-semibold transition ${
-                      tier.highlighted
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                    } disabled:opacity-50`}
-                  >
-                    {loading === tier.checkout ? 'Redirecting...' : tier.cta}
-                  </button>
-                ) : (
-                  <Link
-                    href={tier.href}
-                    className={`block w-full text-center py-3 px-4 rounded-xl font-semibold transition ${
-                      tier.highlighted
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                    }`}
-                  >
-                    {tier.cta}
-                  </Link>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           <p className="text-center text-sm text-gray-500 mt-12">

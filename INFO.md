@@ -23,8 +23,8 @@
 - **Secret key**: (in Vercel env vars)
 - **Webhook secret**: (in Vercel env vars)
 - **Products & Prices**: Created via API
-  - Starter: `price_1ULtLxI5JKZ67FIHMxv3nYoo` ($9/mo)
-  - Growth: `price_1ULtM7I5JKZ67FIHU21RVPOJ` ($19/mo)
+  - Starter: `price_1ULtLxI5JKZ67FIHMxv3nYoo` ($9/mo), `price_1ULtubI5JKZ67FIHo9k0bJO3` ($79/yr)
+  - Growth: `price_1ULtM7I5JKZ67FIHU21RVPOJ` ($19/mo), `price_1ULtuhI5JKZ67FIHkbMcMT84` ($159/yr)
 
 ## Vercel
 - Connect repo: `camloom32/smartqr` (or create new)
