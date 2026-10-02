@@ -1,66 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { QRCodeStyling, DotType } from '@liquid-js/qr-code-styling'
 import sharp from 'sharp'
-import { readFileSync, existsSync } from 'fs'
-import { join } from 'path'
 
 const DOT_TYPE_STRINGS: string[] = Object.values(DotType)
-
-let canvasModule: typeof import('@napi-rs/canvas') | null = null
-let FONT_LOADED = false
-
-async function getCanvas(): Promise<typeof import('@napi-rs/canvas')> {
-  if (!canvasModule) {
-    canvasModule = await import('@napi-rs/canvas')
-  }
-  return canvasModule
-}
-
-async function loadFontSync(): Promise<void> {
-  if (FONT_LOADED) return
-  FONT_LOADED = true
-
-  const { GlobalFonts } = await getCanvas()
-
-  const fontPaths = [
-    join(process.cwd(), 'public', 'fonts', 'Roboto-Bold.ttf'),
-    join(process.cwd(), 'fonts', 'Roboto-Bold.ttf'),
-    '/usr/share/fonts/truetype/roboto/Roboto-Bold.ttf',
-  ]
-
-  for (const p of fontPaths) {
-    if (existsSync(/*turbopackIgnore: true*/ p)) {
-      const fontData = readFileSync(/*turbopackIgnore: true*/ p)
-      GlobalFonts.register(fontData, 'RobotoBold')
-      return
-    }
-  }
-}
-
-async function renderTextWithCanvas(text: string, width: number, fontSize: number, fontColor: string, bgColor = '#ffffff'): Promise<Buffer> {
-  await loadFontSync()
-
-  const { createCanvas } = await getCanvas()
-
-  const height = Math.round(fontSize * 2)
-  const canvas = createCanvas(width, height)
-  const ctx = canvas.getContext('2d')
-
-  ctx.fillStyle = bgColor
-  ctx.fillRect(0, 0, width, height)
-
-  ctx.fillStyle = fontColor
-  ctx.font = `bold ${fontSize}px "RobotoBold", sans-serif`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(text, width / 2, height / 2)
-
-  return canvas.toBuffer('image/png')
-}
 
 function getDotType(style: string): DotType {
   if (DOT_TYPE_STRINGS.includes(style)) return style as DotType
   return DotType.square
+}
+
+async function renderTextBanner(
+  text: string,
+  width: number,
+  height: number,
+  fontSize: number,
+  fontColor: string,
+  bgColor = '#ffffff',
+): Promise<Buffer> {
+  const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <rect width="${width}" height="${height}" fill="${bgColor}"/>
+    <text x="${width / 2}" y="${height / 2 + fontSize / 3}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="${fontColor}">${text}</text>
+  </svg>`
+  return sharp(Buffer.from(svg)).png().toBuffer()
 }
 
 export async function GET(req: NextRequest) {
@@ -251,7 +212,7 @@ async function applyFrame(
       const bannerHeight = 70
       const totalHeight = size + bannerHeight
 
-      const textBuffer = await renderTextWithCanvas(caption, size, 24, fg)
+      const textBuffer = await renderTextBanner(caption, size, 70, 24, fg)
 
       const resultCanvas = await sharp({
         create: { width: size, height: totalHeight, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
@@ -269,8 +230,8 @@ async function applyFrame(
       const totalHeight = size + bannerHeight * 2
 
       const [topBuffer, bottomBuffer] = await Promise.all([
-        renderTextWithCanvas(subcaption, size, 22, fg),
-        renderTextWithCanvas(caption, size, 24, fg),
+        renderTextBanner(subcaption, size, 50, 22, fg),
+        renderTextBanner(caption, size, 50, 24, fg),
       ])
 
       const resultCanvas = await sharp({
@@ -288,7 +249,7 @@ async function applyFrame(
       const badgeSize = 90
       const margin = 12
 
-      const badgeTextBuffer = await renderTextWithCanvas('SCAN', badgeSize, 28, '#ffffff', '#2563eb')
+      const badgeTextBuffer = await renderTextBanner('SCAN', badgeSize, badgeSize, 28, '#ffffff', '#2563eb')
 
       const badgeSvg = `<svg width="${badgeSize}" height="${badgeSize}" xmlns="http://www.w3.org/2000/svg">
         <circle cx="${badgeSize / 2}" cy="${badgeSize / 2}" r="${badgeSize / 2}" fill="#2563eb"/>

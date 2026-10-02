@@ -9,10 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@fontsource/dejavu-sans": "^5.3.0",
     "@liquid-js/qr-code-styling": "^5.6.1",
     "@liquid-js/qrcode-generator": "^1.1.7",
-    "@napi-rs/canvas": "^1.0.10",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.2",
     "@types/qrcode": "^1.5.6",
