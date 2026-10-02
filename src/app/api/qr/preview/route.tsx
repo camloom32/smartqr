@@ -223,18 +223,13 @@ async function applyFrame(
         .toBuffer()
 
       const roundedMaskSvg = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="${size}" height="${size}" rx="${roundedRadius}" ry="${roundedRadius}" fill="white"/>
+        <rect width="${size}" height="${size}" rx="${roundedRadius}" ry="${roundedRadius}" fill="${bg}"/>
       </svg>`
       const roundedMaskBuffer = await sharp(Buffer.from(roundedMaskSvg)).png().toBuffer()
 
-      const whiteBg = await sharp({
-        create: { width: size, height: size, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
-      }).png().toBuffer()
-
-      const rounded = await sharp(whiteBg)
+      const rounded = await sharp(roundedMaskBuffer)
         .composite([
           { input: qrFlat, blend: 'over' },
-          { input: roundedMaskBuffer, blend: 'dest-in' },
         ])
         .png()
         .toBuffer()
