@@ -240,7 +240,7 @@ async function applyFrame(
       const bannerHeight = 100
       const totalHeight = size + bannerHeight
 
-      const qrSized = await sharp(qrBuffer).resize(size, size, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } }).toBuffer()
+      const qrSized = await sharp(qrBuffer).resize(size, size, { fit: 'fill' }).toBuffer()
       const textBuffer = await sharp(await renderTextBanner(caption, size, bannerHeight, 32, fg))
         .resize(size, bannerHeight)
         .toBuffer()
@@ -260,7 +260,7 @@ async function applyFrame(
       const bannerHeight = 70
       const totalHeight = size + bannerHeight * 2
 
-      const qrSized = await sharp(qrBuffer).resize(size, size, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } }).toBuffer()
+      const qrSized = await sharp(qrBuffer).resize(size, size, { fit: 'fill' }).toBuffer()
       const [topRaw, bottomRaw] = await Promise.all([
         renderTextBanner(subcaption, size, bannerHeight, 30, fg),
         renderTextBanner(caption, size, bannerHeight, 30, fg),
