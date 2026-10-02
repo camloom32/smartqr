@@ -216,35 +216,35 @@ async function applyFrame(
 
     case 'rounded': {
       const roundedRadius = 50
+      const margin = 30
+
+      const resized = await sharp(qrBuffer)
+        .resize(size - margin * 2, size - margin * 2, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+        .toBuffer()
+
+      const whiteBg = await sharp({
+        create: { width: size, height: size, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
+      }).composite([{ input: resized, blend: 'over', top: margin, left: margin }]).png().toBuffer()
 
       const roundedMaskSvg = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
         <rect width="${size}" height="${size}" rx="${roundedRadius}" ry="${roundedRadius}" fill="white"/>
       </svg>`
       const roundedMaskBuffer = await sharp(Buffer.from(roundedMaskSvg)).png().toBuffer()
 
-      const flattenedQr = await sharp(qrBuffer)
-        .flatten({ background: { r: 255, g: 255, b: 255, alpha: 1 } })
-        .png()
-        .toBuffer()
-
-      const whiteBg = await sharp({
-        create: { width: size, height: size, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
-      }).composite([{ input: flattenedQr, blend: 'over' }]).png().toBuffer()
-
-      const masked = await sharp(whiteBg)
+      const rounded = await sharp(whiteBg)
         .composite([{ input: roundedMaskBuffer, blend: 'dest-in' }])
         .png()
         .toBuffer()
 
-      return masked.toString('base64')
+      return rounded.toString('base64')
     }
 
     case 'caption-bottom': {
       if (!caption) return pngBase64
-      const bannerHeight = 70
+      const bannerHeight = 80
       const totalHeight = size + bannerHeight
 
-      const textBuffer = await renderTextBanner(caption, size, 70, 24, fg)
+      const textBuffer = await renderTextBanner(caption, size, bannerHeight, 28, fg)
 
       const resultCanvas = await sharp({
         create: { width: size, height: totalHeight, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } },
@@ -258,12 +258,12 @@ async function applyFrame(
 
     case 'caption-top-bottom': {
       if (!caption || !subcaption) return pngBase64
-      const bannerHeight = 50
+      const bannerHeight = 60
       const totalHeight = size + bannerHeight * 2
 
       const [topBuffer, bottomBuffer] = await Promise.all([
-        renderTextBanner(subcaption, size, 50, 22, fg),
-        renderTextBanner(caption, size, 50, 24, fg),
+        renderTextBanner(subcaption, size, bannerHeight, 26, fg),
+        renderTextBanner(caption, size, bannerHeight, 26, fg),
       ])
 
       const resultCanvas = await sharp({
