@@ -1,4 +1,11 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
+
+export const metadata: Metadata = {
+  title: 'QR Code Expired | SmartQR',
+  description: 'This QR code is no longer active. The owner may have cancelled their subscription or the code has been deactivated.',
+  robots: { index: false, follow: false },
+}
 
 export default function ExpiredPage() {
   return (
