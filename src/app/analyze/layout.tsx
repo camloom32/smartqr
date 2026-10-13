@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Free QR Code Color Contrast Analyzer | SmartQR',
-  description: 'Test your QR code color contrast for scannability. Free tool checks foreground/background color combinations and scores scanability before you create QR codes.',
+  title: 'Free QR Code Analyzer | SmartQR',
+  description: 'Check QR code scannability and contrast. Test your QR code before printing. Free contrast checker for any QR code.',
   keywords: 'QR code contrast checker, QR color analyzer, QR code scannability test, color contrast tool, free QR tool',
+  alternates: { canonical: 'https://www.smartqr.id/analyze' },
   openGraph: {
-    title: 'Free QR Code Color Contrast Analyzer',
-    description: 'Test your QR code color contrast for maximum scannability. Free instant analysis.',
+    title: 'Free QR Code Analyzer',
+    description: 'Check if your QR code is easily scannable. Free contrast and color analysis.',
   },
 }
 
