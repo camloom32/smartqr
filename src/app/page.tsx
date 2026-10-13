@@ -46,7 +46,7 @@ export default function HomePage() {
             <p className="text-gray-600 max-w-2xl mx-auto mb-8 text-lg">
               All our free tools — WiFi QR codes, vCard contact cards, and more — are completely{' '}
               <strong>ad-free</strong> and work <strong>without an account</strong>. Create a QR code in
-              seconds, download it, and you're done. No sign-up, no跟踪, no spam.
+              seconds, download it, and you're done. No sign-up, no tracking, no spam.
             </p>
             <div className="flex items-center justify-center gap-4">
               <Link
