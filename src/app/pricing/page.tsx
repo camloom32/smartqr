@@ -88,7 +88,7 @@ const TIERS: Tier[] = [
       'Custom domains',
       'Priority support',
     ],
-    cta: 'Start free trial',
+    cta: 'Coming soon',
     checkout: 'growth',
     highlighted: false,
   },
@@ -161,6 +161,7 @@ export default function PricingPage() {
 
   function getButtonCta(tier: Tier) {
     if (tier.id === 'free') return { text: 'Create QR codes', href: '/create', disabled: false }
+    if (tier.id === 'growth') return { text: 'Coming soon', href: '#', disabled: true }
     if (currentTier === tier.id && (currentStatus === 'active' || currentStatus === 'trialing')) {
       if (currentBilling && currentBilling !== billing) {
         const switchText = billing === 'yearly' ? 'Switch to yearly' : 'Switch to monthly'
