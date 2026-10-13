@@ -17,7 +17,7 @@ export default function HomePage() {
           </h1>
           <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
             Create stunning, customizable QR codes with real-time analytics.
-            When you stop paying, your codes stop working — simple and transparent.
+            When you stop paying, your codes stop working. Simple and transparent.
           </p>
           <div className="flex items-center justify-center gap-4">
             <Link
@@ -41,25 +41,37 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="bg-blue-50 rounded-2xl p-10 text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-3">
-              Free QR code tools — no account needed
+              Free QR code tools and no account needed
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto mb-8 text-lg">
-              All our free tools — WiFi QR codes, vCard contact cards, and more — are completely{' '}
+              QR Code Creator, QR Scanner, QR Analyzer, WiFi QR Generator and more. All completely{' '}
               <strong>ad-free</strong> and work <strong>without an account</strong>. Create a QR code in
-              seconds, download it, and you're done. No sign-up, no tracking, no spam.
+              seconds, download it, and you are done. No sign-up, no tracking, no spam.
             </p>
-            <div className="flex items-center justify-center gap-4">
-              <Link
-                href="/wifi"
-                className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition"
-              >
-                WiFi QR Code
-              </Link>
+            <div className="flex flex-wrap items-center justify-center gap-4">
               <Link
                 href="/create"
+                className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition"
+              >
+                QR Code Creator
+              </Link>
+              <Link
+                href="/scan"
                 className="px-6 py-3 border border-blue-300 text-blue-700 font-semibold rounded-xl hover:bg-blue-100 transition"
               >
-                More free tools
+                QR Scanner
+              </Link>
+              <Link
+                href="/analyze"
+                className="px-6 py-3 border border-blue-300 text-blue-700 font-semibold rounded-xl hover:bg-blue-100 transition"
+              >
+                QR Analyzer
+              </Link>
+              <Link
+                href="/wifi"
+                className="px-6 py-3 border border-blue-300 text-blue-700 font-semibold rounded-xl hover:bg-blue-100 transition"
+              >
+                WiFi QR Generator
               </Link>
             </div>
           </div>
@@ -76,7 +88,7 @@ export default function HomePage() {
             {[
               {
                 title: 'Unlimited scans',
-                desc: 'Never cap your scan count. If your QR code goes viral, we celebrate with you — not penalize you.',
+                desc: 'Never cap your scan count. If your QR code goes viral, we celebrate with you, not penalize you.',
               },
               {
                 title: 'Edit anytime',
@@ -131,7 +143,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t py-8 px-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between text-sm text-gray-500">
-          <span>SmartQR — QR codes built for business</span>
+          <span>SmartQR. QR codes built for business</span>
           <Link href="/pricing" className="hover:text-gray-700">Pricing</Link>
         </div>
       </footer>
